@@ -1,39 +1,139 @@
 import {fetchJSON} from './comms';
+import {Button, CheckBox, ActionState} from './components';
 import * as Strings from './strings';
-
-type ValidationFunction = (data: string) => boolean;
-
-interface ValidationObjects {
-  object: JQuery;
-  validateFn: ValidationFunction;
-}
+import {generateUniqueId} from './utilities';
 
 interface SubmitRequest {
   Name: string;
   Email: string;
   Message: string;
+  Consent: boolean;
 }
 
 interface SubmitResponse {
   success: boolean;
 }
 
-/**
- * Convert a JQuery NameValuePair to SubmitForm Interface
- * @param {JQuery.NameValuePair} json - the data to convert
- * @return {SubmitRequest} the converted SubmitForm interface
- */
-function convertNVP(json: Array<JQuery.NameValuePair>): SubmitRequest {
-  const ret: SubmitRequest = {
-    Name: '',
-    Email: '',
-    Message: '',
-  };
+/** Abstract base class for Form fields */
+abstract class Field {
+  protected input: JQuery;
+  public name: string;
 
-  for (const field of json) {
-    ret[field['name']] = field['value'];
+  /**
+   * Constructs a Form Field
+   * @param {JQuery} container - The parent container
+   * @param {string} type - The type of input ['text', 'email', etc]
+   * @param {string} name - The name to give the label, also the tooltip
+   * @param {string} tag='input' - The type of tag if not input
+   */
+  constructor(container: JQuery, type: string, name: string, tag = 'input') {
+    this.name = name;
+    const id = generateUniqueId();
+    $('<label>')
+        .attr('for', id)
+        .text(name)
+        .appendTo(container);
+    this.input = $(tag)
+        .attr('type', type)
+        .attr('id', id)
+        .attr('name', name)
+        .appendTo(container);
   }
-  return ret;
+  /**
+   * The abstract validation function
+   * @return boolean
+   */
+  abstract validate(): boolean;
+
+  /**
+   * Returns the value in the field as a string
+   * @return {string}
+   */
+  public getVal(): string {
+    return this.input.val() as string;
+  }
+
+  /**
+   * Resets the field
+   */
+  public reset(): void {
+    this.input.removeClass('form-error');
+  }
+
+  /**
+   * Adds error classes to the field
+   */
+  public addError(): void {
+    this.input.addClass('form-error');
+  }
+}
+
+/** A Form text field
+ * @extends Field
+ */
+class TextField extends Field {
+  /**
+   * Constructs a form text field
+   * @param {JQuery} container - The parent container
+   * @param {string} name - The name for the label and tooltip
+   */
+  constructor(container: JQuery, name: string) {
+    super(container, 'text', name);
+  }
+
+  /**
+   * The function to validate the input
+   * @return {boolean}
+   */
+  public validate(): boolean {
+    return ((this.input.val() as string).length > 0);
+  }
+}
+
+/**
+ * A Form Email field
+ * @extends Field
+ */
+class EmailField extends Field {
+  /**
+   * Constructs a Form Email Field
+   * @param {JQuery} container
+   */
+  constructor(container: JQuery) {
+    super(container, 'email', 'Email');
+  }
+
+  /**
+   * Validates email field
+   * @return {boolean}
+   */
+  public validate(): boolean {
+    const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    return emailRegex.test((this.input.val() as string));
+  }
+}
+
+/**
+ * A Form Text area
+ * @extends Field
+ */
+class TextArea extends Field {
+  /**
+   * Creates an instance of text area.
+   * @param {JQuery} container - The parent object
+   * @param {string} name - The label value and tooltip
+   */
+  constructor(container: JQuery, name: string) {
+    super(container, 'text', name, 'textarea');
+  }
+
+  /**
+   * Validates the Text Area
+   * @return {boolean}
+   */
+  public validate(): boolean {
+    return ((this.input.val() as string).length > 0);
+  }
 }
 
 /** The Contact Form class */
@@ -42,6 +142,9 @@ export class ContactForm {
   private form: JQuery;
   private readonly loader: JQuery;
   private readonly server: string;
+  private marketingConsent: CheckBox;
+  private gdprConsent: CheckBox;
+  private submitButton: Button;
 
   private failDOM: JQuery= $('<span>')
       .addClass('form-fail')
@@ -50,7 +153,7 @@ export class ContactForm {
       .addClass('form-success')
       .text(Strings.FORM_SUCCESS);
 
-  private validateList: Array<ValidationObjects> = [];
+  private fieldList: Array<Field> = [];
 
   /**
    * Constructs the ContactForm
@@ -71,90 +174,76 @@ export class ContactForm {
       );
     }
 
-    this.form.children().each(
-        (index: number, element: HTMLElement) => {
-          if (!$(element).is('label')) {
-            const vType = $(element).attr('type');
-            switch (vType) {
-              case 'email': {
-                this.registerValidator($(element), (data: string): boolean => {
-                  const emailRegex =
-                    /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-                  return emailRegex.test(data);
-                });
-                break;
-              }
-              case 'text': {
-                this.registerValidator($(element), (data: string): boolean => {
-                  return data.length != 0;
-                });
-                break;
-              }
-              case 'submit': {
-                $('label[for="' + $(element).attr('name') + '"]').remove();
-                $(element)
-                    .addClass('btn')
-                    .addClass('btn-primary');
-                break;
-              }
-            }
-          }
-        });
+    // Fill form with fields
+    this.fieldList = [
+      new TextField(this.form, 'Name'),
+      new EmailField(this.form),
+      new TextArea(this.form, 'Message'),
+    ];
 
-    this.form.on('submit', async (event: JQuery.SubmitEvent) => {
-      event.preventDefault();
-      this.successDOM.remove();
-      this.failDOM.remove();
-      let allGood = true;
+    this.submitButton = new Button(['form-submit'], 'Submit', 'Submit');
+    this.marketingConsent = new CheckBox(Strings.FORM_MARKETING_CONSENT,
+        this.form, ['marketing-consent'], 'Marketing Consent');
+    this.gdprConsent = new CheckBox(Strings.FORM_GDPR_CONSENT,
+        this.form, ['gdpr-consent'], 'Privacy Policy');
 
-      for (const field of this.validateList) {
-        const fieldVal = field.object.val() as string;
-        field.object.removeClass('form-error');
-        if (!field.validateFn(fieldVal)) {
-          allGood = false;
-          field.object.addClass('form-error');
-        }
+    this.gdprConsent.registerEvent('change', () => {
+      if (this.gdprConsent.checked()) {
+        this.submitButton.enable();
+      } else {
+        this.submitButton.disable();
       }
-      if (allGood) {
-        this.form.fadeOut(200, () => {
-          this.loader.appendTo(this.container);
-        });
+    });
 
-        const formData = this.form.serializeArray();
-        const msgData = convertNVP(formData);
+    this.submitButton.registerEvent('click', async () => {
+      if (this.submitButton.getActionState() == ActionState.Enabled) {
+        this.successDOM.remove();
+        this.failDOM.remove();
+        let allPass = true;
 
-        try {
-          const ret =
-            await fetchJSON<SubmitRequest,
-              SubmitResponse>(msgData, this.server + '/contact_form/');
-          if (ret.success) {
-            this.loader.fadeOut(200, () => {
-              this.successDOM.appendTo(this.container);
-            });
+        let formData: SubmitRequest;
+        for (const field of this.fieldList) {
+          field.reset();
+          const val = field.getVal();
+          if (!field.validate()) {
+            allPass = false;
+            field.addError();
           } else {
-            throw new Error('Failed to submit form.');
+            formData[field.name] = val;
           }
-        } catch (error) {
-          this.form.fadeIn(200, () => {
-            this.loader.fadeOut(200);
-            this.failDOM.appendTo(this.container);
+        }
+        if (allPass) {
+          formData['Consent'] = this.marketingConsent.checked();
+          this.form.fadeOut(200, () => {
+            this.loader.appendTo(this.container);
           });
-        } finally {
-          this.loader.remove();
+
+          try {
+            const ret =
+              await fetchJSON<SubmitRequest,
+                SubmitResponse>(formData, this.server + '/contact_form/');
+            if (ret.success) {
+              this.loader.fadeOut(200, () => {
+                this.successDOM.appendTo(this.container);
+              });
+            } else {
+              throw new Error('Failed to submit form.');
+            }
+          } catch (error) {
+            this.form.fadeIn(200, () => {
+              this.loader.fadeOut(200);
+              this.failDOM.appendTo(this.container);
+            });
+          } finally {
+            for (const field of this.fieldList) {
+              field.reset();
+            }
+            this.loader.remove();
+          }
         }
       }
     });
-  }
 
-  /**
-   * Register a validation function
-   * @param {JQuery} element - the element to validate
-   * @param {ValidationFunction} vFn - the function to call
-   */
-  private registerValidator(element: JQuery, vFn: ValidationFunction): void {
-    this.validateList.push({
-      object: element,
-      validateFn: vFn,
-    });
+    this.submitButton.render().appendTo(this.form);
   }
 }

@@ -1,3 +1,5 @@
+import {generateUniqueId} from './utilities';
+
 /** Class represents Tab component */
 export class Tabs {
   private headers: Array<JQuery> = [];
@@ -79,34 +81,21 @@ export class Tabs {
   }
 }
 
-/** Class represents a Button */
-export class Button {
-  private readonly obj: JQuery;
-  public disabled = false;
+export enum ActionState {
+  Disabled,
+  Enabled
+}
 
-  /**
-   * Constructs a button
-   * @param {string[]} classList - The list of classes to apply to the button
-   * @param {string} title - The title to put on the button for tooltip
-   * @param {string} text - The text to display on the button
-   */
-  constructor(classList: string[], title: string, text: string) {
-    this.obj = $('<button>')
-        .attr('type', 'button')
-        .addClass('btn')
-        .addClass('btn-primary')
-        .attr('title', title)
-        .text(text);
-    for (const c of classList) {
-      this.obj.addClass(c);
-    }
-  }
+/** Base class for Actionable Items like Buttons and Checkboxes */
+class ActionItem {
+  protected obj: JQuery;
+  private state: ActionState;
 
   /**
    * The event callback signature for buttons
    *
    * @callback eventCallback
-   * @param {JQuery.ClickEvent} event - The event that triggered the call
+   * @param {JQuery.Event} event - The event that triggered the call
    */
 
   /**
@@ -114,8 +103,7 @@ export class Button {
    * @param {string} type - The event type to register ["click", "focus", etc]
    * @param {eventCallback} fn - The callback to trigger
    */
-  public registerEvent(type: string,
-      fn: (event: JQuery.ClickEvent) => void): void {
+  public registerEvent(type: string, fn: (event: JQuery.Event) => void): void {
     this.obj.on(type, fn);
   }
 
@@ -126,14 +114,58 @@ export class Button {
   public render(): JQuery {
     return this.obj;
   }
+
+  /**
+   * Returns the current state of the ActionItem
+   * @return {ActionState}
+   */
+  public getActionState(): ActionState {
+    return this.state;
+  }
+
+  /**
+   * Enables the ActionItem
+   */
+  public enable(): void {
+    this.state = ActionState.Enabled;
+    this.obj.disabled = false;
+  }
+
+  /**
+   * Disables the ActionItem
+   */
+  public disable(): void {
+    this.state = ActionState.Disabled;
+    this.obj.disabled = true;
+  }
+}
+
+/** Class represents a Button */
+export class Button extends ActionItem {
+  /**
+   * Constructs a button
+   * @param {string[]} classList - The list of classes to apply to the button
+   * @param {string} title - The title to put on the button for tooltip
+   * @param {string} text - The text to display on the button
+   */
+  constructor(classList: string[], title: string, text: string) {
+    super();
+    this.obj = $('<button>')
+        .attr('type', 'button')
+        .addClass('btn')
+        .addClass('btn-primary')
+        .attr('title', title)
+        .text(text);
+    for (const c of classList) {
+      this.obj.addClass(c);
+    }
+  }
 }
 
 /** Class represents a checkbox */
-export class CheckBox {
-  private readonly container: JQuery;
+export class CheckBox extends ActionItem {
   private readonly input: JQuery;
   private label: JQuery;
-  private state: boolean;
 
   /**
    * Construct a checkbox
@@ -146,24 +178,25 @@ export class CheckBox {
       parent? : JQuery,
       classes? : string[],
       title? : string) {
+    super();
     if (parent == undefined) {
-      this.container = $('<div>');
+      this.obj = $('<div>');
     } else {
-      this.container = parent;
+      this.obj = parent;
     }
 
     if (classes != undefined) {
       for (const c of classes) {
-        this.container.addClass(c);
+        this.obj.addClass(c);
       }
     }
 
-    const qId = this.generateUniqueId();
+    const qId = generateUniqueId();
     this.input = $('<input>')
         .attr('type', 'checkbox')
         .attr('id', qId)
         .addClass('checkbox')
-        .appendTo(this.container);
+        .appendTo(this.obj);
     if (title != undefined) {
       this.input.attr('title', title);
     }
@@ -171,7 +204,7 @@ export class CheckBox {
     this.label = $('<label>')
         .attr('for', qId)
         .text(label)
-        .appendTo(this.container);
+        .appendTo(this.obj);
   }
 
   /**
@@ -188,27 +221,5 @@ export class CheckBox {
    */
   public getCheckBox(): JQuery {
     return this.input;
-  }
-
-  /**
-   * Renders the checkbox
-   * @return {JQuery} The container with the label and checkbox
-   */
-  public render(): JQuery {
-    return this.container;
-  }
-
-  /**
-   * Generates a unique ID
-   * @return {string} A unique ID
-   */
-  private generateUniqueId(): string {
-    let dt = new Date().getTime();
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-        .replace(/[xy]/g, function(c) {
-          const r = (dt + Math.random()*16)%16 | 0;
-          dt = Math.floor(dt/16);
-          return (c=='x' ? r :(r&0x3|0x8)).toString(16);
-        });
   }
 }

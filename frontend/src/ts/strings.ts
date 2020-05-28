@@ -80,3 +80,10 @@ export const FORM_SUCCESS =
 export const FORM_FAIL =
 'An error occurred while trying to send your message. ' +
 'Please try again, or submit an issue on our GitHub.';
+
+export const FORM_MARKETING_CONSENT = 'I would like to receive from ' +
+'time to time technical and commercial information from AdaCore';
+
+export const FORM_GDPR_CONSENT = 'I agree to the processing of the above ' +
+'information for the purpose of processing this feedback and with AdaCore ' +
+'privacy policy.';
