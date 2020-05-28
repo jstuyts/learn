@@ -1,15 +1,16 @@
 from celery import Celery, states
 from celery.exceptions import Ignore
+from celery.utils.log import get_task_logger
 
-import logging
+import time
 import traceback
 
-from .container import Container
+from .container import DockerContainer
 from .project import RemoteProject, BuildError
 
 
 celery = Celery(__name__, autofinalize=False)
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
 
 
 @celery.task(bind=True)
@@ -23,12 +24,14 @@ def run_program(self, data):
     :return:
         Returns a dict containing the status code from the execution
     """
-    container = Container(celery.conf['CONTAINER_NAME'])
-    task_id = self.request.id
-    mode = data['mode']
-    app = self._app
-
     try:
+        start = time.time()
+        container = DockerContainer(celery.conf['CONTAINER_NAME'])
+        task_id = self.request.id
+        mode = data['mode']
+        app = self._app
+
+
         if mode == "run":
             project = RemoteProject(app, container, task_id, data['files'])
             project.build()
@@ -47,6 +50,9 @@ def run_program(self, data):
         elif mode == "prove_flow":
             project = RemoteProject(app, container, task_id, data['files'], True)
             code = project.prove(["--mode=flow"])
+        elif mode == "prove_flow_report_all":
+            project = RemoteProject(app, container, task_id, data['files'], True)
+            code = project.prove(["--mode=flow", "--report=all"])
         elif mode == "prove_report_all":
             project = RemoteProject(app, container, task_id, data['files'], True)
             code = project.prove(["--report=all"])
@@ -54,15 +60,22 @@ def run_program(self, data):
             raise Exception("Mode not implemented")
 
     except BuildError as ex:
-        logger.error(f"Build error code {ex}", exc_info=True)
-        return {'status': int(f"{ex}")}
+        # Build errors can be common - syntax errors and such
+        # Use logger.debug here to minimize unwanted traffic in celery logs
+        logger.debug(f"Build error code {ex}", exc_info=True)
+        elapsed = time.time() - start
+        return {'status': int(f"{ex}"), 'elapsed': elapsed}
     except Exception as ex:
-        logger.error("An error occured in run program", exc_info=True)
+        logger.error("An error occured executing the command", exc_info=True)
         self.update_state(state=states.FAILURE,
                           meta={
                             'exc_type': type(ex).__name__,
                             'exc_message': traceback.format_exc().split('\n')
                         })
         raise Ignore()
+    finally:
+        if container:
+            container.remove()
+        elapsed = time.time() - start
 
-    return {'status': code}
+    return {'status': code, 'elapsed': elapsed}

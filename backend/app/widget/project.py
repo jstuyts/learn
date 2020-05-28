@@ -1,15 +1,17 @@
 import io
-import logging
 import os
 import shutil
 import tempfile
 import zipfile
 
+from .container import rw_user, ro_user
 from .file import new_file, find_mains
 from .lab import LabList
 from .reporter import MQReporter
 
-logger = logging.getLogger(__name__)
+from celery.utils.log import get_task_logger
+
+logger = get_task_logger(__name__)
 
 CLI_FILE = "cli.txt"
 
@@ -19,6 +21,7 @@ COMMON_ADC = """
 pragma Restrictions (No_Specification_of_Aspect => Import);
 pragma Restrictions (No_Use_Of_Pragma => Import);
 pragma Restrictions (No_Use_Of_Pragma => Interface);
+pragma Restrictions (No_Use_Of_Pragma => Linker_Options);
 pragma Restrictions (No_Dependence => System.Machine_Code);
 pragma Restrictions (No_Dependence => Machine_Code);
 """
@@ -32,10 +35,24 @@ pragma Warnings (Off, "subprogram * has no effect");
 pragma Warnings (Off, "file name does not match");
 """
 
-TEMP_WORKSPACE_BASEDIR = os.path.join(os.path.sep, "workspace", "sessions")
+MAIN_GPR = """
+project Main is
 
-TEMPLATE_PROJECT = os.path.join(os.getcwd(), "app", "widget", "static", "templates", "inline_code", "main.gpr")
+   --MAIN_PLACEHOLDER--
 
+   --LANGUAGE_PLACEHOLDER--
+
+   package Compiler is
+      for Switches ("ada") use ("-g", "-O0", "-gnata", "-gnatwa");
+   end Compiler;
+
+   package Builder is
+      for Switches ("ada") use ("-g");
+      for Global_Configuration_Pragmas use "main.adc";
+   end Builder;
+
+end Main;
+"""
 
 class ProjectError(Exception):
     pass
@@ -95,11 +112,7 @@ class Project:
         self.spark = spark_mode
 
         # Grab the default project file
-        gpr_name = os.path.basename(TEMPLATE_PROJECT)
-        with open(TEMPLATE_PROJECT, 'r') as f:
-            gpr_content = f.read()
-
-        self.gpr = new_file(gpr_name, gpr_content)
+        self.gpr = new_file("main.gpr", MAIN_GPR)
 
         # strip cli and labio files from files
         for file in files:
@@ -130,12 +143,21 @@ class Project:
         mains = find_mains(self.file_list)
 
         if len(mains) > 1:
-            raise ProjectError("More than one main found in project")
+            main_match = [i for i in mains if "main.adb" in i]
+            if len(main_match) > 1:
+                raise ProjectError("More than one main.adb found in project")
+            elif len(main_match) < 1:
+                self.main = None
+            else:
+                self.main = main_match[0]
         elif len(mains) == 1:
-            self.main = mains[0].split('.')[0]
-            self.gpr.define_mains([self.main])
+            self.main = mains[0]
         else:
             self.main = None
+
+        if self.main:
+            self.main = self.main.split('.')[0]
+            self.gpr.define_mains([self.main])
 
         self.file_list.append(self.gpr)
 
@@ -187,10 +209,6 @@ class RemoteProject(Project):
             task runner.
         container
             The container that will be used to execute actions inside
-        local_tempd
-            The local tempd file created to house files from the project. This is currently not used.
-        remote_tempd
-            The remote tempd file with the same name as the local tempd that will house the project files
 
         Methods
         -------
@@ -227,22 +245,7 @@ class RemoteProject(Project):
         # Call the Project constructor
         super().__init__(files, spark_mode)
 
-        # Create a tempd and remote_tempd with the same names
-        # We are using the mkdtemp interface to create unique folder names
-        # local_tempd is actually not used
-        self.local_tempd = tempfile.mkdtemp()
-        tmp_name = os.path.basename(os.path.normpath(self.local_tempd))
-        self.remote_tempd = os.path.join(TEMP_WORKSPACE_BASEDIR, tmp_name)
-
-        self.container.mkdir(self.remote_tempd)
-        self.container.push_files(self.file_list, self.remote_tempd)
-
-    def __del__(self):
-        """
-        Cleans up the local and remote tempds and deconstructs the object
-        """
-        shutil.rmtree(self.local_tempd)
-        self.container.rmdir(self.remote_tempd)
+        self.container.push_files(self.file_list)
 
     def build(self):
         """
@@ -251,16 +254,17 @@ class RemoteProject(Project):
             Returns the status code returned from the build
         """
         rep = MQReporter(self.app, self.task_id)
-        rep.console(["gprbuild", "-q", "-P", self.gpr.get_name(), "-gnatwa"])
 
-        main_path = os.path.join(self.remote_tempd, self.gpr.get_name())
-        line = ["gprbuild", "-q", "-P", main_path, "-gnatwa"]
+        line = ["gprbuild", "-q", "-P", self.gpr.get_name()]
+        rep.console(line)
 
-        code, out, err = self.container.execute(line, rep)
+        code, out, err = self.container.execute(line, rep, rw_user)
         if code != 0:
             rep.stderr(f"Build failed with error code: {code}")
             # We need to raise an exception here to disrupt a build/run/prove build chain from the main task
             raise BuildError(code)
+        else:
+            rep.stdout(f"Build completed successfully.")
         return code
 
     def run(self, lab_ref=None, cli=None):
@@ -286,13 +290,12 @@ class RemoteProject(Project):
         rep = MQReporter(self.app, self.task_id, lab_ref=lab_ref)
         rep.console([f"./{self.main}", " ".join(cli)])
 
-        exe = os.path.join(self.remote_tempd, self.main)
         echo_line = f"`echo {' '.join(cli)}`"
-        line = ['sudo', '-u', 'unprivileged', 'timeout', '10s',
+        line = ['timeout', '10s',
                 'bash', '-c',
-                f'LD_PRELOAD=/preloader.so {exe} {echo_line}']
+                f'LD_PRELOAD=/preloader.so ./{self.main} {echo_line}']
 
-        code, out, err = self.container.execute_noenv(line, rep)
+        code, out, err = self.container.execute(line, reporter=rep)
         return code, out
 
     def prove(self, extra_args):
@@ -307,13 +310,12 @@ class RemoteProject(Project):
             raise ProveError("Project not configured for spark mode")
 
         rep = MQReporter(self.app, self.task_id)
-        rep.console(["gnatprove", "-P", self.gpr.get_name(), "--checks-as-errors", "--level=0", "--no-axiom-guard"] + extra_args)
-
-        prove_path = os.path.join(self.remote_tempd, self.gpr.get_name())
-        line = ["gnatprove", "-P", prove_path, "--checks-as-errors", "--level=0", "--no-axiom-guard"]
+        line = ["gnatprove", "-P", self.gpr.get_name(), "--checks-as-errors", "--level=0", "--no-axiom-guard"]
         line.extend(extra_args)
 
-        code, out, err = self.container.execute(line, rep)
+        rep.console(line)
+
+        code, out, err = self.container.execute(line, rep, rw_user)
         return code
 
     def submit(self):

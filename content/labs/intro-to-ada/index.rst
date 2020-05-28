@@ -1,8 +1,8 @@
 :prev_state: False
 :next_state: False
 
-Labs: Introduction to Ada - BETA
-=================================
+Labs: Introduction to Ada
+=========================
 
 .. include:: ../../courses/global.txt
 
@@ -27,8 +27,8 @@ Labs: Introduction to Ada - BETA
 
     These labs contain exercises for the Introduction to Ada course.
 
-    This document was written by Gustavo A. Hoffmann, with contributions and
-    review pending.
+    This document was written by Gustavo A. Hoffmann and reviewed by Michael
+    Frank.
 
 .. only:: builder_html
 
@@ -59,5 +59,6 @@ Labs: Introduction to Ada - BETA
     Object Oriented Programming <chapters/object_oriented_programming>
     Standard Library: Containers <chapters/standard_library_containers>
     Standard Library: Dates & Times <chapters/standard_library_dates_times>
+    Standard Library: Strings <chapters/standard_library_strings>
     Standard Library: Numerics <chapters/standard_library_numerics>
     Solutions <chapters/solutions>

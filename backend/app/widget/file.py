@@ -1,9 +1,9 @@
-import logging
 import os
 import re
 
+from celery.utils.log import get_task_logger
 
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
 
 
 RECEIVED_FILE_CHAR_LIMIT = 50 * 1000
@@ -198,7 +198,7 @@ class CFile(File):
             True if the regex matches
         """
         main_re = re.compile("^(?:void|int) +main\(.*\)(?: |\n)*{", re.MULTILINE)
-        return main_re.findall(self.contents)
+        return main_re.findall(self.content)
 
     def language(self):
         """

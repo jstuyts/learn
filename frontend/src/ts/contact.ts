@@ -1,13 +1,13 @@
 import {fetchJSON} from './comms';
 import {Button, CheckBox, ActionState} from './components';
 import * as Strings from './strings';
-import {generateUniqueId} from './utilities';
 
 interface SubmitRequest {
   Name: string;
   Email: string;
   Message: string;
-  Consent: boolean;
+  GDPRConsent: boolean;
+  MarketingConsent: boolean;
 }
 
 interface SubmitResponse {
@@ -24,16 +24,22 @@ abstract class Field {
    * @param {JQuery} container - The parent container
    * @param {string} type - The type of input ['text', 'email', etc]
    * @param {string} name - The name to give the label, also the tooltip
+   * @param {string} id - The id to give the label, and the tag
    * @param {string} tag='input' - The type of tag if not input
    */
-  constructor(container: JQuery, type: string, name: string, tag = 'input') {
+  constructor(container: JQuery,
+      type: string,
+      name: string,
+      id: string,
+      tag = 'input') {
     this.name = name;
-    const id = generateUniqueId();
+
     $('<label>')
         .attr('for', id)
         .text(name)
         .appendTo(container);
-    this.input = $(tag)
+    this.input = $('<' + tag + '>')
+        .addClass('field')
         .attr('type', type)
         .attr('id', id)
         .attr('name', name)
@@ -76,9 +82,10 @@ class TextField extends Field {
    * Constructs a form text field
    * @param {JQuery} container - The parent container
    * @param {string} name - The name for the label and tooltip
+   * @param {string} id - The id for the label and input tag
    */
-  constructor(container: JQuery, name: string) {
-    super(container, 'text', name);
+  constructor(container: JQuery, name: string, id: string) {
+    super(container, 'text', name, id);
   }
 
   /**
@@ -98,9 +105,10 @@ class EmailField extends Field {
   /**
    * Constructs a Form Email Field
    * @param {JQuery} container
+   * @param {string} id - The id for the label and input tag
    */
-  constructor(container: JQuery) {
-    super(container, 'email', 'Email');
+  constructor(container: JQuery, id: string) {
+    super(container, 'email', 'Email', id);
   }
 
   /**
@@ -122,9 +130,10 @@ class TextArea extends Field {
    * Creates an instance of text area.
    * @param {JQuery} container - The parent object
    * @param {string} name - The label value and tooltip
+   * @param {string} id - The id for the label and textarea tag
    */
-  constructor(container: JQuery, name: string) {
-    super(container, 'text', name, 'textarea');
+  constructor(container: JQuery, name: string, id: string) {
+    super(container, 'text', name, id, 'textarea');
   }
 
   /**
@@ -176,16 +185,20 @@ export class ContactForm {
 
     // Fill form with fields
     this.fieldList = [
-      new TextField(this.form, 'Name'),
-      new EmailField(this.form),
-      new TextArea(this.form, 'Message'),
+      new TextField(this.form, 'Name', 'name-field'),
+      new EmailField(this.form, 'email-field'),
+      new TextArea(this.form, 'Message', 'message-field'),
     ];
+
+    $('<span>')
+        .html(Strings.FORM_PRIVACY_POLICY)
+        .appendTo(this.form);
 
     this.submitButton = new Button(['form-submit'], 'Submit', 'Submit');
     this.marketingConsent = new CheckBox(Strings.FORM_MARKETING_CONSENT,
-        this.form, ['marketing-consent'], 'Marketing Consent');
-    this.gdprConsent = new CheckBox(Strings.FORM_GDPR_CONSENT,
-        this.form, ['gdpr-consent'], 'Privacy Policy');
+        undefined, ['form-checkbox', 'optional'], 'Marketing Consent');
+    this.gdprConsent = new CheckBox(Strings.FORM_GDPR_CONSENT, undefined,
+        ['form-checkbox', 'required'], 'Privacy Policy');
 
     this.gdprConsent.registerEvent('change', () => {
       if (this.gdprConsent.checked()) {
@@ -195,13 +208,22 @@ export class ContactForm {
       }
     });
 
+    this.marketingConsent.render().appendTo(this.form);
+    this.gdprConsent.render().appendTo(this.form);
+
     this.submitButton.registerEvent('click', async () => {
       if (this.submitButton.getActionState() == ActionState.Enabled) {
         this.successDOM.remove();
         this.failDOM.remove();
         let allPass = true;
 
-        let formData: SubmitRequest;
+        const formData: SubmitRequest = {
+          Name: '',
+          Email: '',
+          Message: '',
+          GDPRConsent: false,
+          MarketingConsent: false,
+        };
         for (const field of this.fieldList) {
           field.reset();
           const val = field.getVal();
@@ -213,7 +235,8 @@ export class ContactForm {
           }
         }
         if (allPass) {
-          formData['Consent'] = this.marketingConsent.checked();
+          formData['MarketingConsent'] = this.marketingConsent.checked();
+          formData['GDPRConsent'] = this.gdprConsent.checked();
           this.form.fadeOut(200, () => {
             this.loader.appendTo(this.container);
           });
@@ -243,7 +266,7 @@ export class ContactForm {
         }
       }
     });
-
+    this.submitButton.disable();
     this.submitButton.render().appendTo(this.form);
   }
 }

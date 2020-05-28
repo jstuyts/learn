@@ -15,5 +15,3 @@ If you have any question or issues with learn.adacore.com, we would love to hear
 
 
 .. contact:: Contact Us
-
-`AdaCore's Privacy Policy <https://www.adacore.com/company/privacy/>`_

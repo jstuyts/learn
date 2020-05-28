@@ -36,6 +36,7 @@ LEARN.ADACORE.COM
        About <about>
        Courses <courses/courses>
        Labs <labs/labs>
+       Contact <contact>
 
 
 -------------

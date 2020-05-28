@@ -220,11 +220,13 @@ div {
         color: $color-font-grey;
         padding-left: 15px;
         padding-right: 3px;
+        white-space: pre-wrap;
     }
     &.output_msg {
         color: $color-widget-msg;
         padding-left: 15px;
         padding-right: 3px;
+        white-space: pre-wrap;
         &:hover {
             background-color: #fdd;
         }
@@ -233,6 +235,7 @@ div {
         color: $color-widget-info;
         padding-left: 15px;
         padding-right: 3px;
+        white-space: pre-wrap;
         &:hover {
             background-color: $color-widget-msg-info-bg-hover;
         }
@@ -241,11 +244,13 @@ div {
         color: $color-widget-info;
         padding-left: 3px;
         padding-right: 3px;
+        white-space: pre-wrap;
     }
     &.output_error {
         color: $color-widget-error;
         padding-left: 3px;
         padding-right: 3px;
+        white-space: pre-wrap;
     }
     &.output_success {
         color: $color-widget-success;
@@ -259,6 +264,8 @@ div {
         font-style: normal;
         background: $color-widget-output-area;
         margin-top: 8px;
+        max-height: 250px;
+        overflow-y: auto;
     }
     &.output_row {
         margin-right: 0px;
@@ -278,32 +285,32 @@ div {
         }
 
         label {
-            display: none;
-            position: absolute;
-            top: 0%;
-            left: 0;
+            margin-top: 15px;
+            margin-bottom: 0px;
         }
 
         input {
-            box-sizing: border-box;
-            border: 0;
-            border-bottom:1px solid $color-theme-bg-dark;
-            font-size: 16px;
-            font-weight: bold;
-            height: 50px;
-            padding:0 20px;
-            position: relative;
-            outline: 0;
-            margin: 10px 0;
-            width: 100%;
+            &.field {
+                box-sizing: border-box;
+                border: 0;
+                border-bottom:1px solid $color-theme-bg-dark;
+                font-size: 16px;
+                font-weight: bold;
+                height: 50px;
+                padding:0 20px;
+                position: relative;
+                outline: 0;
+                margin: 10px 0;
+                width: 100%;
 
-            &:focus{
-                border: 1px solid $color-theme-bg-dark;
-            }
+                &:focus{
+                    border: 1px solid $color-theme-bg-dark;
+                }
 
-            &.form-error {
-                border:2px solid red;
-                color:red;
+                &.form-error {
+                    border:2px solid red;
+                    color:red;
+                }
             }
         }
         textarea {
@@ -327,11 +334,38 @@ div {
             }
         }
         span {
+            margin-top: 20px;
+            margin-bottom: 5px;
+
             &.form-success {
 
             }
             &.form-fail {
                 color: red;
+            }
+        }
+        button {
+            margin-top: 20px;
+
+            &.disabled {
+                background-color: $color-theme-fg-dark;
+                color: $color-font-grey;
+                pointer-events: none;
+            }
+        }
+
+        div.form-checkbox {
+            display: grid;
+            grid-template-columns: max-content 100%;
+            grid-gap:5px;
+
+            label {
+
+            }
+
+            input {
+                margin-top: 15px;
+                margin-bottom: 3px;
             }
         }
     }

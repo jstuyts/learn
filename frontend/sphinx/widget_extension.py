@@ -332,10 +332,6 @@ class WidgetCodeDirective(Directive):
                       format='html')
         ] + nodes_latex
 
-html_void_elements = [
-    'area', 'base', 'br', 'col', 'command', 'embed', 'hr', 'img', 'input',
-    'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr'
-]
 
 class ContactFormDirective(Directive):
     has_content = False

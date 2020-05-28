@@ -3,32 +3,44 @@ Exceptions
 
 :code-config:`reset_accumulator=True;accumulate_code=False`
 
-.. include:: <isopub.txt>
-
-.. role:: ada(code)
-   :language: ada
-
-.. role:: c(code)
-   :language: c
-
-.. role:: cpp(code)
-   :language: c++
-
+.. include:: ../../../courses/global.txt
 
 Uninitialized Value
 -------------------
 
-The main goal for this exercise is to employ exceptions as a mechanism to
-avoid the use of uninitialized values for a certain type. Your job is to
-complete the :ada:`Options` package.
+**Goal**: implement an enumeration to avoid the use of uninitialized values.
 
-In the :ada:`Options` package, you'll declare the :ada:`Option` enumeration
-type, which contains the :ada:`Unitialized` value, and the actual options:
-:ada:`Option_1`, :ada:`Option_2` and :ada:`Option_3`. You'll also implement
-the :ada:`Image` function, which returns a string for the :ada:`Option`
-type. In case the argument to :ada:`Image` is :ada:`Unitialized`, the
-function must raise the :ada:`Unitialized_Value` exception. This exception,
-too, must be part of the :ada:`Options` package specification.
+**Steps**:
+
+    #. Implement the :ada:`Options` package.
+
+        #. Declare the :ada:`Option` enumeration type.
+
+        #. Declare the :ada:`Unitialized_Value` exception.
+
+        #. Implement the :ada:`Image` function.
+
+**Requirements**:
+
+    #. Enumeration :ada:`Option` contains:
+
+        #. the :ada:`Unitialized` value, and
+
+        #. the actual options:
+
+            - :ada:`Option_1`,
+            - :ada:`Option_2`,
+            - :ada:`Option_3`.
+
+    #. Function :ada:`Image` returns a string for the :ada:`Option` type.
+
+        #. In case the argument to :ada:`Image` is :ada:`Unitialized`, the
+           function must raise the :ada:`Unitialized_Value` exception.
+
+**Remarks**:
+
+    #. In this exercise, we employ exceptions as a mechanism to avoid the use
+       of uninitialized values for a certain type.
 
 .. code:: ada lab=Exceptions.Uninitialized_Value
 
@@ -98,17 +110,32 @@ too, must be part of the :ada:`Options` package specification.
 Numerical Exception
 -------------------
 
-In this exercise, you'll use the test procedure :ada:`Num_Exception_Test`
-from the :ada:`Tests` package below. Your job is to add exception handling
-to the :ada:`Check_Exception` procedure based on the following requirements:
+**Goal**: handle numerical exceptions in a test procedure.
 
-#. If the exception raised by :ada:`Num_Exception_Test` is
-   :ada:`Constraint_Error`, the procedure should displays a
-   "Constraint_Error detected!" message to the user.
+**Steps**:
 
-#. Otherwise, it should display the message associated with the exception
-   |mdash| you can use the :ada:`Exception_Message` function to retrieve
-   the message.
+    #. Add exception handling to the :ada:`Check_Exception` procedure.
+
+**Requirements**:
+
+    #. The test procedure :ada:`Num_Exception_Test` from the :ada:`Tests`
+       package below must be used in the implementation of
+       :ada:`Check_Exception`.
+
+    #. The :ada:`Check_Exception` procedure must be extended to handle
+       exceptions as follows:
+
+        #. If the exception raised by :ada:`Num_Exception_Test` is
+           :ada:`Constraint_Error`, the procedure must display the message
+           "Constraint_Error detected!" to the user.
+
+        #. Otherwise, it must display the message associated with the
+           exception.
+
+**Remarks**:
+
+    #. You can use the :ada:`Exception_Message` function to retrieve the
+       message associated with an exception.
 
 .. code:: ada lab=Exceptions.Numerical_Exception
 
@@ -151,8 +178,6 @@ to the :ada:`Check_Exception` procedure based on the following requirements:
     end Tests;
 
     with Tests; use Tests;
-
-    procedure Check_Exception (ID : Test_ID);
 
     procedure Check_Exception (ID : Test_ID) is
     begin
@@ -208,13 +233,40 @@ to the :ada:`Check_Exception` procedure based on the following requirements:
 Re-raising Exceptions
 ---------------------
 
-In this exercise, you'll extend the implementation of the
-:ada:`Check_Exception` procedure from the previous exercise. Your goal is
-to change the procedure, so that it *re-raises* the exception raised by
-:ada:`Num_Exception_Test` |mdash| in addition to displaying the messages
-that you already implemented in the previous exercise. Naturally, you can
-use the code for the :ada:`Check_Exception` procedure from the previous
-exercise as a starting point.
+**Goal**: make use of exception re-raising in a test procedure.
+
+**Steps**:
+
+    #. Declare new exception: :ada:`Another_Exception`.
+
+    #. Add exception re-raise to the :ada:`Check_Exception` procedure.
+
+**Requirements**:
+
+    #. Exception :ada:`Another_Exception` must be declared in the :ada:`Tests`
+       package.
+
+    #. Procedure :ada:`Check_Exception` must be extended to *re-raise* any
+       exception. When an exception is detected, the procedure must:
+
+        #. display an user message (as implemented in the previous exercise),
+           and then
+
+        #. Raise or *re-raise* exception depending on the exception that is
+           being handled:
+
+            #. In case of :ada:`Constraint_Error` exception, *re-raise* the
+               exception.
+
+            #. In all other cases, raise :ada:`Another_Exception`.
+
+**Remarks**:
+
+    #. In this exercise, you should extend the implementation of the
+       :ada:`Check_Exception` procedure from the previous exercise.
+
+        #. Naturally, you can use the code for the :ada:`Check_Exception`
+           procedure from the previous exercise as a starting point.
 
 .. code:: ada lab=Exceptions.Exception_Reraise
 
@@ -222,7 +274,7 @@ exercise as a starting point.
     in 0:Exception_1_Chk
     out 0:Constraint_Error detected! Constraint_Error (raised by Check_Exception) detected!
     in 1:Exception_2_Chk
-    out 1:Custom_Exception raised! TESTS.CUSTOM_EXCEPTION (raised by Check_Exception) detected!
+    out 1:Custom_Exception raised! TESTS.ANOTHER_EXCEPTION (raised by Check_Exception) detected!
     --  END LAB IO BLOCK
 
     package Tests is

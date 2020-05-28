@@ -3,14 +3,7 @@ Solutions
 
 :code-config:`reset_accumulator=True;accumulate_code=False`
 
-.. role:: ada(code)
-   :language: ada
-
-.. role:: c(code)
-   :language: c
-
-.. role:: cpp(code)
-   :language: c++
+.. include:: ../../../courses/global.txt
 
 Imperative Language
 -------------------
@@ -501,7 +494,7 @@ States #3
 
     function Is_On (State : Integer) return Boolean is
     begin
-       return (if State = 0 then False else True);
+       return not (State = 0);
     end Is_On;
 
     procedure Display_On_Off (State : Integer);
@@ -710,19 +703,17 @@ Operations
 
     end Operations;
 
-    package Operations_Test is
+    package Operations.Test is
 
-       procedure Display_Operations (A, B : Integer);
+       procedure Display (A, B : Integer);
 
-    end Operations_Test;
+    end Operations.Test;
 
     with Ada.Text_IO; use Ada.Text_IO;
 
-    with Operations;  use Operations;
+    package body Operations.Test is
 
-    package body Operations_Test is
-
-       procedure Display_Operations (A, B : Integer) is
+       procedure Display (A, B : Integer) is
           A_Str : constant String := Integer'Image (A);
           B_Str : constant String := Integer'Image (B);
        begin
@@ -739,15 +730,15 @@ Operations
           Put_Line (A_Str & " / " & B_Str & " = "
                     & Integer'Image (Divide (A, B))
                     & ",");
-       end Display_Operations;
+       end Display;
 
-    end Operations_Test;
+    end Operations.Test;
 
     with Ada.Command_Line; use Ada.Command_Line;
     with Ada.Text_IO;      use Ada.Text_IO;
 
     with Operations;
-    with Operations_Test;  use Operations_Test;
+    with Operations.Test;  use Operations.Test;
 
     procedure Main is
 
@@ -768,8 +759,8 @@ Operations
                 Put_Line ("Divide (100, 2) = "
                           & Integer'Image (Operations.Divide (100, 2)));
              when Operations_Display_Chk =>
-                Display_Operations (10, 5);
-                Display_Operations ( 1, 2);
+                Display (10, 5);
+                Display ( 1, 2);
           end case;
        end Check;
 
@@ -902,10 +893,10 @@ Colors
        Check (Test_Case_Index'Value (Argument (1)));
     end Main;
 
-Integer Types
-~~~~~~~~~~~~~
+Integers
+~~~~~~~~
 
-.. code:: ada lab=Solutions.Strongly_Typed.Integer_Types
+.. code:: ada lab=Solutions.Strongly_Typed.Integers
 
     --  START LAB IO BLOCK
     in 0:I_100_Range
@@ -1380,6 +1371,15 @@ Colors
           Mediumblue,
           Darkblue);
 
+       function To_Integer (C : HTML_Color) return Integer;
+
+       type Basic_HTML_Color is
+         (Red,
+          Green,
+          Blue);
+
+       function To_HTML_Color (C : Basic_HTML_Color) return HTML_Color;
+
        subtype Int_Color is Integer range 0 .. 255;
 
        type RGB is record
@@ -1397,6 +1397,33 @@ Colors
     with Ada.Integer_Text_IO;
 
     package body Color_Types is
+
+       function To_Integer (C : HTML_Color) return Integer is
+       begin
+          case C is
+             when Salmon      => return 16#FA8072#;
+             when Firebrick   => return 16#B22222#;
+             when Red         => return 16#FF0000#;
+             when Darkred     => return 16#8B0000#;
+             when Lime        => return 16#00FF00#;
+             when Forestgreen => return 16#228B22#;
+             when Green       => return 16#008000#;
+             when Darkgreen   => return 16#006400#;
+             when Blue        => return 16#0000FF#;
+             when Mediumblue  => return 16#0000CD#;
+             when Darkblue    => return 16#00008B#;
+          end case;
+
+       end To_Integer;
+
+       function To_HTML_Color (C : Basic_HTML_Color) return HTML_Color is
+       begin
+          case C is
+             when Red   => return Red;
+             when Green => return Green;
+             when Blue  => return Blue;
+          end case;
+       end To_HTML_Color;
 
        function To_RGB (C : HTML_Color) return RGB is
        begin
@@ -1477,28 +1504,28 @@ Inventory
 
     --  START LAB IO BLOCK
     in 0:Inventory_Chk
-    out 0:Adding item: Ballpoint Pen. Assets: $27.75. Adding item: Oil-based Pen Marker. Assets: $927.75. Adding item: Feather Quill Pen. Assets: $1007.75.
+    out 0:Item: Ballpoint Pen. Assets: $27.75. Item: Oil-based Pen Marker. Assets: $927.75. Item: Feather Quill Pen. Assets: $1007.75.
     --  END LAB IO BLOCK
 
     package Inventory_Pkg is
 
+       type Item_Name is
+         (Ballpoint_Pen, Oil_Based_Pen_Marker, Feather_Quill_Pen);
+
+       function To_String (I : Item_Name) return String;
+
        type Item is record
+          Name     : Item_Name;
           Quantity : Natural;
           Price    : Float;
        end record;
 
-       type Inventory is record
-          Assets   : Float := 0.0;
-       end record;
-
-       function Init (Name     : String;
+       function Init (Name     : Item_Name;
                       Quantity : Natural;
                       Price    : Float) return Item;
 
-       procedure Add (Inv : in out Inventory;
-                      I   : Item);
-
-       procedure Display (Inv : Inventory);
+       procedure Add (Assets : in out Float;
+                      I      : Item);
 
     end Inventory_Pkg;
 
@@ -1506,32 +1533,31 @@ Inventory
 
     package body Inventory_Pkg is
 
-       function Init (Name     : String;
+       function To_String (I : Item_Name) return String is
+       begin
+          case I is
+             when Ballpoint_Pen        => return "Ballpoint Pen";
+             when Oil_Based_Pen_Marker => return "Oil-based Pen Marker";
+             when Feather_Quill_Pen    => return "Feather Quill Pen";
+          end case;
+       end To_String;
+
+       function Init (Name     : Item_Name;
                       Quantity : Natural;
                       Price    : Float) return Item is
        begin
-          Put_Line ("Adding item: " & Name & ".");
+          Put_Line ("Item: " & To_String (Name) & ".");
 
-          return (Quantity => Quantity,
+          return (Name     => Name,
+                  Quantity => Quantity,
                   Price    => Price);
        end Init;
 
-       procedure Add (Inv : in out Inventory;
-                      I   : Item) is
+       procedure Add (Assets : in out Float;
+                      I      : Item) is
        begin
-          Inv.Assets := Inv.Assets + Float (I.Quantity) * I.Price;
+          Assets := Assets + Float (I.Quantity) * I.Price;
        end Add;
-
-       procedure Display (Inv : Inventory) is
-          package F_IO is new Ada.Text_IO.Float_IO (Float);
-
-          use F_IO;
-       begin
-          Put ("Assets: $");
-          Put (Inv.Assets, 1, 2, 0);
-          Put (".");
-          New_Line;
-       end Display;
 
     end Inventory_Pkg;
 
@@ -1547,28 +1573,39 @@ Inventory
        type Test_Case_Index is
          (Inventory_Chk);
 
+       procedure Display (Assets : Float) is
+          package F_IO is new Ada.Text_IO.Float_IO (Float);
+
+          use F_IO;
+       begin
+          Put ("Assets: $");
+          Put (Assets, 1, 2, 0);
+          Put (".");
+          New_Line;
+       end Display;
+
        procedure Check (TC : Test_Case_Index) is
-          I   : Item;
-          Inv : Inventory;
+          I      : Item;
+          Assets : Float := 0.0;
 
           --  Please ignore the following three lines!
           pragma Warnings (Off, "default initialization");
-          for Inv'Address use F'Address;
+          for Assets'Address use F'Address;
           pragma Warnings (On, "default initialization");
        begin
           case TC is
           when Inventory_Chk =>
-             I := Init ("Ballpoint Pen",        185,  0.15);
-             Add (Inv, I);
-             Display (Inv);
+             I := Init (Ballpoint_Pen,        185,  0.15);
+             Add (Assets, I);
+             Display (Assets);
 
-             I := Init ("Oil-based Pen Marker", 100,  9.0);
-             Add (Inv, I);
-             Display (Inv);
+             I := Init (Oil_Based_Pen_Marker, 100,  9.0);
+             Add (Assets, I);
+             Display (Assets);
 
-             I := Init ("Feather Quill Pen",      2, 40.0);
-             Add (Inv, I);
-             Display (Inv);
+             I := Init (Feather_Quill_Pen,      2, 40.0);
+             Add (Assets, I);
+             Display (Assets);
           end case;
        end Check;
 
@@ -1778,7 +1815,7 @@ Colors: Lookup-Table
 
        type HTML_Color_RGB is array (HTML_Color) of RGB;
 
-       To_RGB_Loopup_Table : constant HTML_Color_RGB
+       To_RGB_Lookup_Table : constant HTML_Color_RGB
          := (Salmon      => (16#FA#, 16#80#, 16#72#),
              Firebrick   => (16#B2#, 16#22#, 16#22#),
              Red         => (16#FF#, 16#00#, 16#00#),
@@ -1798,7 +1835,7 @@ Colors: Lookup-Table
 
        function To_RGB (C : HTML_Color) return RGB is
        begin
-          return To_RGB_Loopup_Table (C);
+          return To_RGB_Lookup_Table (C);
        end To_RGB;
 
        function Image (C : RGB) return String is
@@ -1841,7 +1878,7 @@ Colors: Lookup-Table
                 Put_Line ("Size of HTML_Color_RGB: "
                           & Integer'Image (HTML_Color_RGB'Length));
                 Put_Line ("Firebrick: "
-                          & Image (To_RGB_Loopup_Table (Firebrick)));
+                          & Image (To_RGB_Lookup_Table (Firebrick)));
              when HTML_Color_To_Integer_Chk =>
                 for I in HTML_Color'Range loop
                    Put_Line (HTML_Color'Image (I) & " => "
@@ -1868,9 +1905,9 @@ Unconstrained Array
 
     --  START LAB IO BLOCK
     in 0:Init_Chk
-    out 0: 5  4  3  2  1
+    out 0: 5  4  3  2  1  9  8  7  6  5
     in 1:Init_Proc_Chk
-    out 1: 5  4  3  2  1
+    out 1: 5  4  3  2  1  9  8  7  6  5
     in 2:Double_Chk
     out 2: 2  4  10  20 -20
     in 3:Diff_Prev_Chk
@@ -1885,7 +1922,7 @@ Unconstrained Array
 
        procedure Init (A : in out My_Array);
 
-       function Init (L : Positive) return My_Array;
+       function Init (I, L : Positive) return My_Array;
 
        procedure Double (A : in out My_Array);
 
@@ -1904,8 +1941,8 @@ Unconstrained Array
           end loop;
        end Init;
 
-       function Init (L : Positive) return My_Array is
-          A : My_Array (1 .. L);
+       function Init (I, L : Positive) return My_Array is
+          A : My_Array (I .. I + L - 1);
        begin
           Init (A);
           return A;
@@ -1921,8 +1958,8 @@ Unconstrained Array
        function Diff_Prev_Elem (A : My_Array) return My_Array is
           A_Out : My_Array (A'Range);
        begin
-          A_Out (1) := 0;
-          for I in 2 .. A'Last loop
+          A_Out (A'First) := 0;
+          for I in A'First + 1 .. A'Last loop
              A_Out (I) := A (I) - A (I - 1);
           end loop;
 
@@ -1946,6 +1983,7 @@ Unconstrained Array
 
        procedure Check (TC : Test_Case_Index) is
           AA : My_Array (1 .. 5);
+          AB : My_Array (5 .. 9);
 
           procedure Display (A : My_Array) is
           begin
@@ -1962,19 +2000,23 @@ Unconstrained Array
        begin
           case TC is
           when Init_Chk =>
-             AA := Init (AA'Last);
+             AA := Init (AA'First, AA'Length);
+             AB := Init (AB'First, AB'Length);
              Display (AA);
+             Display (AB);
           when Init_Proc_Chk =>
              Init (AA);
+             Init (AB);
              Display (AA);
+             Display (AB);
           when Double_Chk =>
-             Local_Init (AA);
-             Double (AA);
-             Display (AA);
+             Local_Init (AB);
+             Double (AB);
+             Display (AB);
           when Diff_Prev_Chk =>
-             Local_Init (AA);
-             AA := Diff_Prev_Elem (AA);
-             Display (AA);
+             Local_Init (AB);
+             AB := Diff_Prev_Elem (AB);
+             Display (AB);
           when Diff_Prev_Single_Chk =>
              declare
                 A1 : My_Array (1 .. 1) := (1 => 42);
@@ -1996,128 +2038,133 @@ Unconstrained Array
        Check (Test_Case_Index'Value (Argument (1)));
     end Main;
 
-Quantities And Amounts
-~~~~~~~~~~~~~~~~~~~~~~
+Product info
+~~~~~~~~~~~~
 
-.. code:: ada lab=Solutions.Arrays.Quantities_And_Amounts
+.. code:: ada lab=Solutions.Arrays.Product_Info
 
     --  START LAB IO BLOCK
     in 0:Total_Func_Chk
     out 0:0.50 20.00 200.00 100.00 200.00
     in 1:Total_Proc_Chk
     out 1:0.50 20.00 200.00 100.00 200.00
-    in 2:Total_Amount_Chk
+    in 2:Total_Value_Chk
     out 2:520.50
     --  END LAB IO BLOCK
 
-    package Quantities_Amounts is
+    package Product_Info_Pkg is
 
        subtype Quantity is Natural;
 
-       subtype Amount is Float;
+       subtype Currency is Float;
 
-       type Quantities is array (Positive range <>) of Quantity;
+       type Product_Info is record
+          Units : Quantity;
+          Price : Currency;
+       end record;
 
-       type Amounts is array (Positive range <>) of Amount;
+       type Product_Infos is array (Positive range <>) of Product_Info;
 
-       procedure Total (Q     : Quantities;
-                        A     : Amounts;
-                        A_Out : out Amounts);
+       type Currency_Array is array (Positive range <>) of Currency;
 
-       function Total (Q : Quantities;
-                       A : Amounts) return Amounts;
+       procedure Total (P   : Product_Infos;
+                        Tot : out Currency_Array);
 
-       function Total (Q : Quantities;
-                       A : Amounts) return Amount;
+       function Total (P : Product_Infos) return Currency_Array;
 
-    end Quantities_Amounts;
+       function Total (P : Product_Infos) return Currency;
 
-    package body Quantities_Amounts is
+    end Product_Info_Pkg;
 
-       procedure Total (Q     : Quantities;
-                        A     : Amounts;
-                        A_Out : out Amounts) is
+    package body Product_Info_Pkg is
+
+       --  Get total for single product
+       function Total (P : Product_Info) return Currency is
+          (Currency (P.Units) * P.Price);
+
+       procedure Total (P   : Product_Infos;
+                        Tot : out Currency_Array) is
        begin
-          for I in A'Range loop
-             A_Out (I) := Amount (Q (I)) * A (I);
+          for I in P'Range loop
+             Tot (I) := Total (P (I));
           end loop;
        end Total;
 
-       function Total (Q : Quantities;
-                       A : Amounts) return Amounts
+       function Total (P : Product_Infos) return Currency_Array
        is
-          A_Out : Amounts (A'Range);
+          Tot : Currency_Array (P'Range);
        begin
-          Total (Q, A, A_Out);
-          return A_Out;
+          Total (P, Tot);
+          return Tot;
        end Total;
 
-       function Total (Q : Quantities;
-                       A : Amounts) return Amount
+       function Total (P : Product_Infos) return Currency
        is
-          A_Out : Amount := 0.0;
+          Tot : Currency := 0.0;
        begin
-         for I in A'Range loop
-             A_Out := A_Out + Amount (Q (I)) * A (I);
+         for I in P'Range loop
+             Tot := Tot + Total (P (I));
           end loop;
-          return A_Out;
+          return Tot;
        end Total;
 
-    end Quantities_Amounts;
+    end Product_Info_Pkg;
 
     with Ada.Command_Line;   use Ada.Command_Line;
     with Ada.Text_IO;        use Ada.Text_IO;
 
-    with Quantities_Amounts; use Quantities_Amounts;
+    with Product_Info_Pkg;   use Product_Info_Pkg;
 
     procedure Main is
-       package Amount_IO is new Ada.Text_IO.Float_IO (Amount);
+       package Currency_IO is new Ada.Text_IO.Float_IO (Currency);
 
        type Test_Case_Index is
          (Total_Func_Chk,
           Total_Proc_Chk,
-          Total_Amount_Chk);
+          Total_Value_Chk);
 
        procedure Check (TC : Test_Case_Index) is
           subtype Test_Range is Positive range 1 .. 5;
 
-          A  : Amounts (Test_Range);
-          Q  : Quantities (Test_Range);
-          A1 : Amount;
+          P    : Product_Infos (Test_Range);
+          Tots : Currency_Array (Test_Range);
+          Tot  : Currency;
 
-          procedure Display (A : Amounts) is
+          procedure Display (Tots : Currency_Array) is
           begin
-             for I in A'Range loop
-                Amount_IO.Put (A (I));
+             for I in Tots'Range loop
+                Currency_IO.Put (Tots (I));
                 New_Line;
              end loop;
           end Display;
 
-          procedure Local_Init (Q : in out Quantities;
-                                A : in out Amounts) is
+          procedure Local_Init (P : in out Product_Infos) is
           begin
-             Q := (1,    2,    5,   10,   10);
-             A := (0.5, 10.0, 40.0, 10.0, 20.0);
+             P := ((1,   0.5),
+                   (2,  10.0),
+                   (5,  40.0),
+                   (10, 10.0),
+                   (10, 20.0));
           end Local_Init;
 
        begin
-          Amount_IO.Default_Fore := 1;
-          Amount_IO.Default_Aft  := 2;
-          Amount_IO.Default_Exp  := 0;
+          Currency_IO.Default_Fore := 1;
+          Currency_IO.Default_Aft  := 2;
+          Currency_IO.Default_Exp  := 0;
 
           case TC is
           when Total_Func_Chk =>
-             Local_Init (Q, A);
-             A := Total (Q, A);
-             Display (A);
+             Local_Init (P);
+             Tots := Total (P);
+             Display (Tots);
           when Total_Proc_Chk =>
-             Local_Init (Q, A);
-             Total (Q, A, A);
-             Display (A);
-          when Total_Amount_Chk =>
-             Local_Init (Q, A);
-             A1 := Total (Q, A);
-             Amount_IO.Put (A1);
+             Local_Init (P);
+             Total (P, Tots);
+             Display (Tots);
+          when Total_Value_Chk =>
+             Local_Init (P);
+             Tot := Total (P);
+             Currency_IO.Put (Tot);
              New_Line;
           end case;
        end Check;
@@ -2139,17 +2186,17 @@ String_10
 .. code:: ada lab=Solutions.Arrays.String_10
 
     --  START LAB IO BLOCK
-    in 0:String_10_Chk
+    in 0:String_10_Long_Chk
     out 0:And this i
+    in 1:String_10_Short_Chk
+    out 1:Hey!
     --  END LAB IO BLOCK
 
     package Strings_10 is
 
        subtype String_10 is String (1 .. 10);
 
-       --  Using "type String_10 is..." is possible, too. However, it
-       --  requires a custom Put_Line procedure that is called in Main:
-       --  procedure Put_Line (S : String_10);
+       --  Using "type String_10 is..." is possible, too.
 
        function To_String_10 (S : String) return String_10;
 
@@ -2160,8 +2207,12 @@ String_10
        function To_String_10 (S : String) return String_10 is
           S_Out : String_10;
        begin
-          for I in String_10'Range loop
+          for I in String_10'First .. Integer'Min (String_10'Last, S'Last) loop
              S_Out (I) := S (I);
+          end loop;
+
+          for I in Integer'Min (String_10'Last + 1, S'Last + 1) .. String_10'Last loop
+             S_Out (I) := ' ';
           end loop;
 
           return S_Out;
@@ -2176,17 +2227,23 @@ String_10
 
     procedure Main is
        type Test_Case_Index is
-         (String_10_Chk);
+         (String_10_Long_Chk,
+          String_10_Short_Chk);
 
        procedure Check (TC : Test_Case_Index) is
-          S    : constant String := "And this is a long string just for testing...";
+          SL   : constant String := "And this is a long string just for testing...";
+          SS   : constant String := "Hey!";
           S_10 : String_10;
 
        begin
           case TC is
-          when String_10_Chk =>
-             S_10 := To_String_10 (S);
-             Put_Line (S_10);
+          when String_10_Long_Chk =>
+             S_10 := To_String_10 (SL);
+             Put_Line (String (S_10));
+          when String_10_Short_Chk =>
+             S_10 := (others => ' ');
+             S_10 := To_String_10 (SS);
+             Put_Line (String (S_10));
           end case;
        end Check;
 
@@ -2607,9 +2664,12 @@ Simple todo list
 
        type Todo_Item is access String;
 
-       type Todo_List is array (Positive range <>) of Todo_Item;
+       type Todo_Items is array (Positive range <>) of Todo_Item;
 
-       Last : Natural := 0;
+       type Todo_List (Max_Len : Natural) is record
+          Items : Todo_Items (1 .. Max_Len);
+          Last  : Natural := 0;
+       end record;
 
        procedure Add (Todos : in out Todo_List;
                       Item  : String);
@@ -2625,9 +2685,9 @@ Simple todo list
        procedure Add (Todos : in out Todo_List;
                       Item  : String) is
        begin
-          if Last < Todos'Last then
-             Last := Last + 1;
-             Todos (Last) := new String'(Item);
+          if Todos.Last < Todos.Items'Last then
+             Todos.Last := Todos.Last + 1;
+             Todos.Items (Todos.Last) := new String'(Item);
           else
              Put_Line ("ERROR: list is full!");
           end if;
@@ -2636,8 +2696,8 @@ Simple todo list
        procedure Display (Todos : Todo_List) is
        begin
           Put_Line ("TO-DO LIST");
-          for I in Todos'First .. Last loop
-             Put_Line (Todos (I).all);
+          for I in Todos.Items'First .. Todos.Last loop
+             Put_Line (Todos.Items (I).all);
           end loop;
        end Display;
 
@@ -2653,7 +2713,7 @@ Simple todo list
          (Todo_List_Chk);
 
        procedure Check (TC : Test_Case_Index) is
-          T : Todo_List (1 .. 10);
+          T : Todo_List (10);
        begin
           case TC is
              when Todo_List_Chk =>
@@ -2694,12 +2754,12 @@ Price list
     in 1:Price_List_Chk
     out 1:PRICE LIST  1.45  2.37  3.21  4.14  5.22  6.69  7.77  8.14  9.99  10.01
     in 2:Price_List_Get_Chk
-    out 2:Attemp Get #  5 Element #  5 =>  5.22 Attemp Get #  40 Element not available (as expected)
+    out 2:Attempt Get #  5 Element #  5 =>  5.22 Attempt Get #  40 Element not available (as expected)
     --  END LAB IO BLOCK
 
     package Price_Lists is
 
-       type Price_Type is delta 10.0 ** (-2) digits 12;
+       type Price_Type is delta 0.01 digits 12;
 
        type Price_List_Array is array (Positive range <>) of Price_Type;
 
@@ -2803,7 +2863,7 @@ Price list
           procedure Get_Display (Idx : Positive) is
              R : constant Price_Result := Get (L, Idx);
           begin
-             Put_Line ("Attemp Get # " & Positive'Image (Idx));
+             Put_Line ("Attempt Get # " & Positive'Image (Idx));
              if R.Ok then
                 Put_Line ("Element # " & Positive'Image (Idx)
                           & " => "     & Price_Type'Image (R.Price));
@@ -2836,601 +2896,6 @@ Price list
                 Local_Init_List;
                 Get_Display (5);
                 Get_Display (40);
-          end case;
-       end Check;
-
-    begin
-       if Argument_Count < 1 then
-          Put_Line ("ERROR: missing arguments! Exiting...");
-          return;
-       elsif Argument_Count > 1 then
-          Put_Line ("Ignoring additional arguments...");
-       end if;
-
-       Check (Test_Case_Index'Value (Argument (1)));
-    end Main;
-
-Fixed-point square-root
-~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code:: ada lab=Solutions.More_About_Types.Fixed_Point_Sqrt
-
-    --  START LAB IO BLOCK
-    in 0:TESTCASE Sqrt_Chk_Last_Div_8
-    out 0:Float-Sqrt of 4096.00000 = 64.00000 Fixed-Sqrt of  4095.99998 =  63.99998
-    in 1:VALUE 8.0
-    out 1:Float-Sqrt of 8.00000 = 2.82843 Fixed-Sqrt of  8.00000 =  2.82841
-    in 2:VALUE 4.0
-    out 2:Float-Sqrt of 4.00000 = 2.00000 Fixed-Sqrt of  4.00000 =  2.00000
-    in 3:VALUE 2.0
-    out 3:Float-Sqrt of 2.00000 = 1.41421 Fixed-Sqrt of  2.00000 =  1.41420
-    in 4:VALUE 1.0
-    out 4:Float-Sqrt of 1.00000 = 1.00000 Fixed-Sqrt of  1.00000 =  1.00000
-    in 5:VALUE 0.5
-    out 5:Float-Sqrt of 0.50000 = 0.70711 Fixed-Sqrt of  0.50000 =  0.70709
-    in 6:VALUE 0.125
-    out 6:Float-Sqrt of 0.12500 = 0.35355 Fixed-Sqrt of  0.12500 =  0.35355
-    in 7:VALUE 0.001
-    out 7:Float-Sqrt of 0.00101 = 0.03173 Fixed-Sqrt of  0.00101 =  0.03172
-    --  END LAB IO BLOCK
-
-    package Fixed_Point_Ops is
-
-    --     F_Size    : constant := 16;
-    --     F_Size    : constant := 24;
-       F_Size    : constant := 32;
-    --     F_Size    : constant := 48;
-    --     F_Size    : constant := 64;
-
-       -- Definition for Q<F_Size / 2 - 1>.<F_Size / 2>, e.g. Q15.16:
-
-       F_Size_Fract : constant := F_Size / 2;
-       F_Size_Sign  : constant := 1;
-       F_Size_Int   : constant := F_Size - F_Size_Fract - F_Size_Sign;
-       F_Delta      : constant := 2.0 ** (-F_Size_Fract);
-       F_Last       : constant := 2.0 ** ( F_Size_Int);
-
-       -- Definition for Q<F_Size / 2 - 1>.<F_Size / 2>, e.g. Q16.16:
-
-    --     F_Size_Fract : constant := F_Size / 2;
-    --     F_Size_Sign  : constant := 0;
-    --     F_Size_Int   : constant := F_Size - F_Size_Fract - F_Size_Sign;
-    --     F_Delta      : constant := 2.0 ** (-F_Size_Fract);
-    --     F_Last       : constant := 2.0 ** ( F_Size_Int);
-
-       -- Definition for Q<F_Size * 1/4 - 1>.<F_Size * 3/4>, e.g. Q7.24:
-
-    --     F_Size_Fract : constant := F_Size * 3 / 4;
-    --     F_Size_Sign  : constant := 1;
-    --     F_Size_Int   : constant := F_Size - F_Size_Fract - F_Size_Sign;
-    --     F_Delta      : constant := 2.0 ** (-F_Size_Fract);
-    --     F_Last       : constant := 2.0 ** ( F_Size_Int);
-
-       -- Definition for Q<F_Size * 1/4>.<F_Size * 3/4>, e.g. Q8.24
-       -- (unsigned!):
-
-    --     F_Size_Fract : constant := F_Size * 3 / 4;
-    --     F_Size_Sign  : constant := 0;
-    --     F_Size_Int   : constant := F_Size - F_Size_Fract - F_Size_Sign;
-    --     F_Delta      : constant := 2.0 ** (-F_Size_Fract);
-    --     F_Last       : constant := 2.0 ** ( F_Size_Int);
-
-       type Fixed is delta F_Delta range 0.0 .. F_Last - F_Delta;
-
-       function Sqrt (V : Fixed) return Fixed;
-
-    end Fixed_Point_Ops;
-
-    package body Fixed_Point_Ops is
-
-       --
-       --  Algorithm and code Author: Christophe Meessen 1993.
-       --  Initially published in :
-       --    usenet comp.lang.c, Thu, 28 Jan 1993 08:35:23 GMT.
-       --
-       --  https://github.com/chmike/fpsqrt/blob/master/fpsqrt.c
-       --
-
-       function Sqrt (V : Fixed) return Fixed
-       is
-          T, Q, B, R : Fixed;
-
-          Shift_Fac  : constant := F_Size_Int + F_Size_Sign;
-
-          B_Init     : constant := 2.0 ** (Shift_Fac - 2);
-          --  Equivalent to:
-          --      2#100_0000_0000_0000.0000_0000_0000_0000#;
-          --     16#4000.0000#;
-
-          B_Thres    : constant := 2.0 ** (-(F_Size_Fract - 2) + 4);
-          --  Equivalent to:
-          --      2#000_0000_0000_0000.0000_0000_0000_0100#;
-          --     16#0000.0040#;
-       begin
-          R := V;
-          B := B_Init;
-
-          Q := 0.0;
-          while B > B_Thres loop
-             T := Q + B;
-             if R >= T then
-                R := R - T;
-                Q := T + B;
-             end if;
-             R := R * 2;
-             B := B / 2;
-          end loop;
-          Q := Q / 2 ** ((Shift_Fac) / 2);
-
-          return Q;
-       end Sqrt;
-
-    end Fixed_Point_Ops;
-
-    with Ada.Command_Line;  use Ada.Command_Line;
-    with Ada.Text_IO;       use Ada.Text_IO;
-
-    with Ada.Numerics.Elementary_Functions; use Ada.Numerics.Elementary_Functions;
-
-    with Fixed_Point_Ops;   use Fixed_Point_Ops;
-
-    procedure Main is
-       type Test_Case_Index is
-         (Sqrt_Chk_Last_Div_2,
-          Sqrt_Chk_Last_Div_2_Minus,
-          Sqrt_Chk_Last_Div_4,
-          Sqrt_Chk_Last_Div_8);
-
-       procedure Display_Sqrt (V : Fixed) is
-          package Float_IO is new Ada.Text_IO.Float_IO (Float);
-
-          F : constant Float := Float (V);
-       begin
-          Put ("Float-Sqrt of ");
-          Float_IO.Put (F,
-                        Fore => 1, Aft => 5, Exp => 0);
-          Put (" = ");
-          Float_IO.Put (Sqrt (F),
-                        Fore => 1, Aft => 5, Exp => 0);
-          New_Line;
-          Put_Line ("Fixed-Sqrt of "
-                    & Fixed'Image (V)
-                    & " = "
-                    & Fixed'Image (Sqrt (V)));
-       end Display_Sqrt;
-
-       procedure Check (TC : Test_Case_Index) is
-
-       begin
-          case TC is
-          when Sqrt_Chk_Last_Div_2_Minus =>
-             Display_Sqrt (Fixed'Last / 2 - Fixed'Delta * Fixed'Size);
-          when Sqrt_Chk_Last_Div_2 =>
-             Display_Sqrt (Fixed'Last / 2);
-          when Sqrt_Chk_Last_Div_4 =>
-             Display_Sqrt (Fixed'Last / 4);
-          when Sqrt_Chk_Last_Div_8 =>
-             Display_Sqrt (Fixed'Last / 8);
-          end case;
-       exception
-          when others =>
-             Put_Line ("Exception!");
-       end Check;
-
-    begin
-       if Argument_Count < 2 then
-          Put_Line ("ERROR: missing arguments! Exiting...");
-          return;
-       elsif Argument_Count > 2 then
-          Put_Line ("Ignoring additional arguments...");
-       end if;
-
-       if Argument (1) = "TESTCASE" then
-          Check (Test_Case_Index'Value (Argument (2)));
-       elsif Argument (1) = "VALUE" then
-          Display_Sqrt (Fixed'Value (Argument (2)));
-       end if;
-
-    end Main;
-
-Inventory
-~~~~~~~~~
-
-.. code:: ada lab=Solutions.More_About_Types.Inventory
-
-    --  START LAB IO BLOCK
-    in 0:Inventory_Chk
-    out 0:==== ITEM #  1: Ballpoint Pen == BOUGHT Quantity:  10 Value:     1.50 == SOLD Quantity:  4 Value:     0.60 == IN STOCK Quantity:  6 Value:     0.90  ==== ITEM #  2: Oil-based Pen Marker == BOUGHT Quantity:  20 Value:     180.00 == SOLD Quantity:  0 Value:     0.00 == IN STOCK Quantity:  20 Value:     180.00  ==== ITEM #  3: Feather Quill Pen == BOUGHT Quantity:  50 Value:     750.00 == SOLD Quantity:  20 Value:     300.00 == IN STOCK Quantity:  30 Value:     450.00  ==== OVERALL Value bought:     931.50 Value sold:       300.60 Value in stock:   630.90
-    in 1:Inventory_Range_Chk
-    out 1:Info: Call to 'Add' failed as expected. Info: Call to 'Set' failed as expected.
-    --  END LAB IO BLOCK
-
-    package Inventory_Pkg is
-
-       subtype Item_Quantity is Natural;
-
-       type Currency is delta 10.0 ** (-2) digits 12;
-
-       type Name_Type is access String;
-
-       subtype Item_ID is Positive;
-
-       type Transaction_Type is (Bought, Sold);
-
-       type Transaction_Quantities is array (Transaction_Type) of Item_Quantity;
-
-       type Transaction_Values is array (Transaction_Type) of Currency;
-
-       type Add_Status (Success : Boolean := False) is record
-          case Success is
-             when False =>
-                null;
-             when True =>
-                ID : Item_ID;
-          end case;
-       end record;
-
-       type Item is record
-          Name            : Name_Type;
-          Price           : Currency;
-          Stock_Quantity  : Item_Quantity;
-          Stock_Value     : Currency;
-          Trans_Quantity  : Transaction_Quantities;
-          Trans_Value     : Transaction_Values;
-       end record;
-
-       type Items is array (Item_ID range <>) of Item;
-
-       type Inventory (Max : Item_ID) is record
-          List_Item    : Items (1 .. Max);
-          Last_Item_Id : Natural := 0;
-       end record;
-
-       function Init (Name  : String;
-                      Price : Currency) return Item;
-
-       procedure Init (Inv : in out Inventory);
-
-       procedure Add (Inv     : in out Inventory;
-                      I       :        Item;
-                      Status  : out    Add_Status);
-
-       function Get (Inv       : Inventory;
-                     Item_Name : String) return Item_ID;
-
-       function Last_Id (Inv : Inventory) return Natural;
-
-       procedure Set (Inv      : in out Inventory;
-                      Trans    :        Transaction_Type;
-                      ID       :        Item_ID;
-                      Quantity :        Positive;
-                      Success  :    out Boolean);
-
-       function Get (Inv   : Inventory;
-                     ID    : Item_ID) return String;
-       --  Retrieve item name
-       --
-       --  Item_Name : String := Get (Inv, ID);
-
-       function Get (Inv   : Inventory;
-                     ID    : Item_ID) return Item_Quantity;
-       --  Retrieve number of units in stock for specified item
-       --
-       --  Number_Units_In_Stock_For_Item : Item_Quantity := Get (Inv, ID);
-
-       function Get (Inv   : Inventory;
-                     ID    : Item_ID) return Currency;
-       --  Retrieve total amount in stock for specified item
-       --
-       --  Potential_Income_For_Units_In_Stock_For_Item : Currency := Get (Inv, ID);
-
-       function Get (Inv   : Inventory;
-                     Trans : Transaction_Type;
-                     ID    : Item_ID) return Item_Quantity;
-       --  Retrieve number of units for specified item and transaction type
-       --
-       --  Number_Units_Sold_For_Item : Item_Quantity := Get (Inv, Sold, ID);
-
-       function Get (Inv   : Inventory;
-                     Trans : Transaction_Type;
-                     ID    : Item_ID) return Currency;
-       --  Retrieve amount for specified item and transaction type
-       --
-       --  Income_For_Sold_Units_Of_Item : Currency := Get (Inv, Sold, ID);
-
-       function Get (Inv   : Inventory;
-                     Trans : Transaction_Type) return Currency;
-       --  Retrieve amount for transaction type
-       --
-       --  Income_For_All_Sold_Units : Currency := Get (Inv, Sold);
-
-       function Get (Inv   : Inventory) return Currency;
-       --  Retrieve amount for whole inventory
-       --
-       --  Income_For_All_Units_In_Stock : Currency := Get (Inv);
-
-       procedure Display (Inv : Inventory);
-
-    end Inventory_Pkg;
-
-    with Ada.Text_IO; use Ada.Text_IO;
-
-    package body Inventory_Pkg is
-
-       function Init (Name  : String;
-                      Price : Currency) return Item is
-       begin
-          return Item'(Name           => new String'(Name),
-                       Price          => Price,
-                       Stock_Quantity => 0,
-                       Stock_Value    => 0.0,
-                       Trans_Quantity => (others => 0),
-                       Trans_Value    => (others => 0.0));
-       end Init;
-
-       procedure Init (Inv : in out Inventory) is
-       begin
-          Inv.Last_Item_Id := Item_ID'First;
-       end Init;
-
-       procedure Add (Inv     : in out Inventory;
-                      I       :        Item;
-                      Status  : out    Add_Status)
-       is
-          L : Natural := Inv.Last_Item_Id;
-       begin
-          if L < Inv.Max then
-             L := L + 1;
-             Inv.Last_Item_Id  := L;
-             Inv.List_Item (L) := I;
-
-             Status := (Success => True,
-                        ID      => L);
-          else
-             Status := (Success => False);
-          end if;
-       end Add;
-
-       function Get (Inv       : Inventory;
-                     Item_Name : String) return Item_ID is
-          ID : Item_ID := Item_ID'First;
-       begin
-          for I in Inv.List_Item'First .. Inv.Last_Item_Id loop
-             if Inv.List_Item (I).Name.all = Item_Name then
-                ID := I;
-                exit;
-             end if;
-          end loop;
-
-          return ID;
-       end Get;
-
-       function Last_Id (Inv : Inventory) return Natural is (Inv.Last_Item_Id);
-
-       procedure Set (Inv      : in out Inventory;
-                      Trans    :        Transaction_Type;
-                      ID       :        Item_ID;
-                      Quantity :        Positive;
-                      Success  :    out Boolean)
-       is
-          Q : Integer;
-       begin
-          case Trans is
-             when Bought =>
-                Q := Inv.List_Item (ID).Stock_Quantity + Quantity;
-             when Sold =>
-                Q := Inv.List_Item (ID).Stock_Quantity - Quantity;
-          end case;
-
-          if Q >= 0 then
-             Success := True;
-
-             Inv.List_Item (ID).Stock_Quantity := Q;
-
-             Inv.List_Item (ID).Stock_Value :=
-               Currency (Q) * Inv.List_Item (ID).Price;
-
-             Inv.List_Item (ID).Trans_Quantity (Trans) :=
-               Inv.List_Item (ID).Trans_Quantity (Trans) + Quantity;
-
-             Inv.List_Item (ID).Trans_Value (Trans) :=
-               Inv.List_Item (ID).Trans_Value (Trans) +
-               Currency (Quantity) * Inv.List_Item (ID).Price;
-          else
-             Success := False;
-          end if;
-
-       end Set;
-
-       function Get (Inv   : Inventory;
-                     ID    : Item_ID) return String is
-          (Inv.List_Item (ID).Name.all);
-
-       function Get (Inv   : Inventory;
-                     ID    : Item_ID) return Item_Quantity is
-         (Inv.List_Item (ID).Stock_Quantity);
-
-       function Get (Inv   : Inventory;
-                     ID    : Item_ID) return Currency is
-         (Inv.List_Item (ID).Stock_Value);
-
-       function Get (Inv   : Inventory;
-                     Trans : Transaction_Type;
-                     ID    : Item_ID) return Item_Quantity is
-         (Inv.List_Item (ID).Trans_Quantity (Trans));
-
-       function Get (Inv   : Inventory;
-                     Trans : Transaction_Type;
-                     ID    : Item_ID) return Currency is
-         (Inv.List_Item (ID).Trans_Value (Trans));
-
-       function Get (Inv   : Inventory;
-                     Trans : Transaction_Type) return Currency
-       is
-          Total : Currency := 0.0;
-       begin
-          for I in Inv.List_Item'First .. Last_Id (Inv) loop
-             Total := Total + Get (Inv, Trans, I);
-          end loop;
-
-          return Total;
-       end Get;
-
-       function Get (Inv   : Inventory) return Currency
-       is
-          Total : Currency := 0.0;
-       begin
-          for I in Inv.List_Item'First .. Last_Id (Inv) loop
-             Total := Total + Get (Inv, I);
-          end loop;
-
-          return Total;
-       end Get;
-
-       procedure Display (Inv : Inventory)
-       is
-          package F_IO is new Ada.Text_IO.Decimal_IO (Currency);
-
-          use F_IO;
-       begin
-          for I in Inv.List_Item'First .. Last_Id (Inv) loop
-             Put_Line ("==== ITEM # " & Positive'Image (I)
-                       & ": " & Get (Inv, I));
-             for Trans in Transaction_Type loop
-                Put_Line ("== " & Transaction_Type'Image (Trans));
-                Put_Line ("Quantity: "
-                          & Item_Quantity'Image (Get (Inv, Trans, I)));
-                Put ("Value:     ");
-                Put (Currency'(Get (Inv, Trans, I)), 1, 2, 0);
-                New_Line;
-             end loop;
-             Put_Line ("== IN STOCK");
-             Put_Line ("Quantity: " & Item_Quantity'Image (Get (Inv, I)));
-             Put ("Value:     ");
-             Put (Currency'(Get (Inv, I)), 1, 2, 0);
-             New_Line;
-             New_Line;
-          end loop;
-          Put_Line ("==== OVERALL");
-          Put ("Value bought:     ");
-          Put (Currency'(Get (Inv, Bought)), 1, 2, 0);
-          New_Line;
-          Put ("Value sold:       ");
-          Put (Currency'(Get (Inv, Sold)), 1, 2, 0);
-          New_Line;
-          Put ("Value in stock:   ");
-          Put (Currency'(Get (Inv)), 1, 2, 0);
-          New_Line;
-       end Display;
-
-    end Inventory_Pkg;
-
-    with Ada.Command_Line;  use Ada.Command_Line;
-    with Ada.Text_IO;       use Ada.Text_IO;
-
-    with Inventory_Pkg;     use Inventory_Pkg;
-
-    procedure Main is
-       --  Remark: the following line is not relevant.
-       F   : array (1 .. 200) of Float := (others => 42.42);
-
-       type Test_Case_Index is
-         (Inventory_Chk,
-          Inventory_Range_Chk);
-
-       procedure Check (TC : Test_Case_Index) is
-          Inv     : Inventory (3);
-          Success : Boolean;
-          Status  : Add_Status;
-
-          --  Please ignore the following three lines!
-          pragma Warnings (Off, "default initialization");
-          for Inv'Address use F'Address;
-          pragma Warnings (On, "default initialization");
-
-          procedure Init_Check_Data is
-          begin
-             Add (Inv,
-                  Init ("Ballpoint Pen", 0.15),
-                  Status);
-
-             if Status.Success then
-                Set (Inv      => Inv,
-                     Trans    => Bought,
-                     ID       => Status.ID,
-                     Quantity => 10,
-                     Success  => Success);
-
-                Set (Inv      => Inv,
-                     Trans    => Sold,
-                     ID       => Status.ID,
-                     Quantity => 2,
-                     Success  => Success);
-
-                Set (Inv      => Inv,
-                     Trans    => Sold,
-                     ID       => Status.ID,
-                     Quantity => 2,
-                     Success  => Success);
-             end if;
-
-             Add (Inv,
-                  Init ("Oil-based Pen Marker", 9.0),
-                  Status);
-
-             Add (Inv,
-                  Init ("Feather Quill Pen", 15.0),
-                  Status);
-
-             Set (Inv      => Inv,
-                  Trans    => Bought,
-                  ID       => Get (Inv, "Oil-based Pen Marker"),
-                  Quantity => 20,
-                  Success  => Success);
-
-             Set (Inv      => Inv,
-                  Trans    => Bought,
-                  ID       => Get (Inv, "Feather Quill Pen"),
-                  Quantity => 50,
-                  Success  => Success);
-
-             Set (Inv      => Inv,
-                  Trans    => Sold,
-                  ID       => Get (Inv, "Feather Quill Pen"),
-                  Quantity => 20,
-                  Success  => Success);
-          end Init_Check_Data;
-
-          procedure Check_Expected_Failure (Success   : Boolean;
-                                            Proc_Name : String) is
-          begin
-             if Success then
-                Put_Line ("ERROR: Call to '" & Proc_Name & "' should have failed.");
-             else
-                Put_Line ("Info: Call to '" & Proc_Name & "' failed as expected.");
-             end if;
-          end Check_Expected_Failure;
-
-       begin
-          Init_Check_Data;
-
-          case TC is
-          when Inventory_Chk =>
-             Display (Inv);
-          when Inventory_Range_Chk =>
-             --  Inventory is full; try to add another item
-             Add (Inv,
-                  Init ("Ballpoint Pen", 0.15),
-                  Status);
-             Check_Expected_Failure (Status.Success, "Add");
-
-             --  Try to sell more than available in stock
-             Set (Inv      => Inv,
-                  Trans    => Sold,
-                  ID       => Get (Inv, "Oil-based Pen Marker"),
-                  Quantity => 30,
-                  Success  => Success);
-             Check_Expected_Failure (Success, "Set");
           end case;
        end Check;
 
@@ -3634,12 +3099,8 @@ Limited Strings
                        To   : in out Lim_String) is
           Min_Last : constant Positive := Get_Min_Last (From, To);
        begin
-          for I in To'First .. Min_Last loop
-             To (I) := From (I);
-          end loop;
-          for I in Min_Last + 1 .. To'Last loop
-             To (I) := '_';
-          end loop;
+          To (To'First .. Min_Last)    := From (To'First .. Min_Last);
+          To (Min_Last + 1 .. To'Last) := (others => '_');
        end;
 
        function "=" (Ref, Dut : Lim_String) return Boolean is
@@ -3661,10 +3122,11 @@ Limited Strings
     with Limited_Strings; use Limited_Strings;
 
     procedure Check_Lim_String is
+       S  : constant String := "----------";
        S1 : constant Lim_String := Init ("Hello World");
        S2 : constant Lim_String := Init (30);
        S3 : Lim_String := Init (5);
-       S4 : Lim_String := Init (30);
+       S4 : Lim_String := Init (S & S & S);
     begin
        Put ("S1 => ");
        Put_Line (S1);
@@ -3745,7 +3207,7 @@ Display Array
        type T_Range is range <>;
        type T_Element is private;
        type T_Array is array (T_Range range <>) of T_Element;
-       with function Image (E : T_Element) return String is <>;
+       with function Image (E : T_Element) return String;
     procedure Display_Array (Header : String;
                              A      : T_Array);
 
@@ -3838,8 +3300,8 @@ Average of Array of Float
     --  START LAB IO BLOCK
     in 0:Float_Array_Chk
     out 0:Average:  8.00000E-01
-    in 1:Digits_12_Float_Array_Chk
-    out 1:Average:  5.40000000000E+00
+    in 1:Digits_7_Float_Array_Chk
+    out 1:Average:  5.200000E-01
     --  END LAB IO BLOCK
 
     generic
@@ -3849,13 +3311,13 @@ Average of Array of Float
     function Average (A : T_Array) return T_Element;
 
     function Average (A : T_Array) return T_Element is
-       Acc : T_Element := 0.0;
+       Acc : Float := 0.0;
     begin
        for I in A'Range loop
-          Acc := Acc + A (I);
+          Acc := Acc + Float (A (I));
        end loop;
 
-       return Acc / T_Element (A'Length);
+       return T_Element (Acc / Float (A'Length));
     end Average;
 
     with Ada.Command_Line; use Ada.Command_Line;
@@ -3865,7 +3327,7 @@ Average of Array of Float
 
     procedure Main is
        type Test_Case_Index is (Float_Array_Chk,
-                                Digits_12_Float_Array_Chk);
+                                Digits_7_Float_Array_Chk);
 
        procedure Test_Float_Array is
           type Float_Array is array (Positive range <>) of Float;
@@ -3880,8 +3342,8 @@ Average of Array of Float
           Put_Line ("Average: " & Float'Image (Average_Float (A)));
        end Test_Float_Array;
 
-       procedure Test_Digits_12_Float_Array is
-          type Custom_Float is digits 12;
+       procedure Test_Digits_7_Float_Array is
+          type Custom_Float is digits 7 range 0.0 .. 1.0;
 
           type Float_Array is
             array (Integer range <>) of Custom_Float;
@@ -3891,111 +3353,19 @@ Average of Array of Float
                      T_Element => Custom_Float,
                      T_Array   => Float_Array);
 
-          A : constant Float_Array (-1 .. 3) := (-1.0, 3.0, 5.0, 7.5, 12.5);
+          A : constant Float_Array (-1 .. 3) := (0.5, 0.0, 1.0, 0.6, 0.5);
        begin
           Put_Line ("Average: "
                     & Custom_Float'Image (Average_Float (A)));
-       end Test_Digits_12_Float_Array;
+       end Test_Digits_7_Float_Array;
 
        procedure Check (TC : Test_Case_Index) is
        begin
           case TC is
              when Float_Array_Chk =>
                 Test_Float_Array;
-             when Digits_12_Float_Array_Chk =>
-                Test_Digits_12_Float_Array;
-          end case;
-       end Check;
-
-    begin
-       if Argument_Count < 1 then
-          Put_Line ("ERROR: missing arguments! Exiting...");
-          return;
-       elsif Argument_Count > 1 then
-          Put_Line ("Ignoring additional arguments...");
-       end if;
-
-       Check (Test_Case_Index'Value (Argument (1)));
-    end Main;
-
-Average of Array of Decimal
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code:: ada lab=Solutions.Generics.Average_Array_Of_Decimal
-
-    --  START LAB IO BLOCK
-    in 0:Decimal_Array_Chk
-    out 0:Average:  5.40
-    in 1:Delta_EM4_Digits_16_Float_Array_Chk
-    out 1:Average:  1.2000
-    --  END LAB IO BLOCK
-
-    generic
-       type T_Range is range <>;
-       type T_Element is delta <> digits <>;
-       type T_Array is array (T_Range range <>) of T_Element;
-    function Average (A : T_Array) return T_Element;
-
-    function Average (A : T_Array) return T_Element is
-       Acc : T_Element := 0.0;
-    begin
-       for I in A'Range loop
-          Acc := Acc + A (I);
-       end loop;
-
-       return Acc / T_Element (A'Length);
-    end Average;
-
-    with Ada.Command_Line; use Ada.Command_Line;
-    with Ada.Text_IO;      use Ada.Text_IO;
-
-    with Average;
-
-    procedure Main is
-       type Test_Case_Index is (Decimal_Array_Chk,
-                                Delta_EM4_Digits_16_Float_Array_Chk);
-
-       procedure Test_Decimal_Array is
-          type Decimal is delta 10.0 ** (-2) digits 12;
-
-          type Decimal_Array is
-            array (Integer range <>) of Decimal;
-
-          function Average_Decimal is new
-            Average (T_Range   => Integer,
-                     T_Element => Decimal,
-                     T_Array   => Decimal_Array);
-
-          A : constant Decimal_Array (-2 .. 2) := (-1.0, 3.0, 5.0, 7.5, 12.5);
-       begin
-          Put_Line ("Average: "
-                    & Decimal'Image (Average_Decimal (A)));
-       end Test_Decimal_Array;
-
-       procedure Test_Delta_EM4_Digits_16_Float_Array is
-          type Decimal is delta 10.0 ** (-4) digits 16;
-
-          type Decimal_Array is
-            array (Positive range <>) of Decimal;
-
-          function Average_Decimal is new
-            Average (T_Range   => Positive,
-                     T_Element => Decimal,
-                     T_Array   => Decimal_Array);
-
-          A : constant Decimal_Array (2 .. 6) := (2.0, 5.0, 2.0, 8.5, -11.5);
-       begin
-          Put_Line ("Average: "
-                    & Decimal'Image (Average_Decimal (A)));
-       end Test_Delta_EM4_Digits_16_Float_Array;
-
-       procedure Check (TC : Test_Case_Index) is
-       begin
-          case TC is
-             when Decimal_Array_Chk =>
-                Test_Decimal_Array;
-             when Delta_EM4_Digits_16_Float_Array_Chk =>
-                Test_Delta_EM4_Digits_16_Float_Array;
+             when Digits_7_Float_Array_Chk =>
+                Test_Digits_7_Float_Array;
           end case;
        end Check;
 
@@ -4016,10 +3386,8 @@ Average of Array of Any Type
 .. code:: ada lab=Solutions.Generics.Average_Any
 
     --  START LAB IO BLOCK
-    in 0:Decimal_Array_Chk
-    out 0:Average: 5.40
-    in 1:Item_Array_Chk
-    out 1:Average per item & quantity: 175.00 Average price:                 7.50
+    in 0:Item_Array_Chk
+    out 0:Average per item & quantity: 175.00 Average price:                 7.50
     --  END LAB IO BLOCK
 
     generic
@@ -4039,42 +3407,13 @@ Average of Array of Any Type
        return Acc / Float (A'Length);
     end Average;
 
-    procedure Test_Decimal_Array;
+    procedure Test_Item;
 
     with Ada.Text_IO;      use Ada.Text_IO;
 
     with Average;
 
-    procedure Test_Decimal_Array is
-       package F_IO is new Ada.Text_IO.Float_IO (Float);
-
-       type Decimal is delta 10.0 ** (-2) digits 12;
-
-       type Decimal_Array is
-         array (Integer range <>) of Decimal;
-
-       function To_Float (V : Decimal) return Float is
-         (Float (V));
-
-       function Average_Decimal is new
-         Average (T_Range   => Integer,
-                  T_Element => Decimal,
-                  T_Array   => Decimal_Array);
-
-       A : constant Decimal_Array (-2 .. 2) := (-1.0, 3.0, 5.0, 7.5, 12.5);
-    begin
-       Put ("Average: ");
-       F_IO.Put (Average_Decimal (A), 1, 2, 0);
-       New_Line;
-    end Test_Decimal_Array;
-
-    procedure Test_Item_Array;
-
-    with Ada.Text_IO;      use Ada.Text_IO;
-
-    with Average;
-
-    procedure Test_Item_Array is
+    procedure Test_Item is
        package F_IO is new Ada.Text_IO.Float_IO (Float);
 
        type Amount is delta 0.01 digits 12;
@@ -4119,25 +3458,21 @@ Average of Array of Any Type
        Put ("Average price:               ");
        F_IO.Put (Average_Price (A), 3, 2, 0);
        New_Line;
-    end Test_Item_Array;
+    end Test_Item;
 
     with Ada.Command_Line; use Ada.Command_Line;
     with Ada.Text_IO;      use Ada.Text_IO;
 
-    with Test_Decimal_Array;
-    with Test_Item_Array;
+    with Test_Item;
 
     procedure Main is
-       type Test_Case_Index is (Decimal_Array_Chk,
-                                Item_Array_Chk);
+       type Test_Case_Index is (Item_Array_Chk);
 
        procedure Check (TC : Test_Case_Index) is
        begin
           case TC is
-             when Decimal_Array_Chk =>
-                Test_Decimal_Array;
              when Item_Array_Chk =>
-                Test_Item_Array;
+                Test_Item;
           end case;
        end Check;
 
@@ -4158,10 +3493,8 @@ Generic list
 .. code:: ada lab=Solutions.Generics.Gen_List
 
     --  START LAB IO BLOCK
-    in 0:Int_List_Chk
+    in 0:Int_Chk
     out 0:Added item successfully! Added item successfully! Added item successfully! Couldn't add item! List of integers  2  5  7
-    in 1:String_List_Chk
-    out 1:Added item successfully! Added item successfully! Added item successfully! Couldn't add item! List of strings Hello World Bye
     --  END LAB IO BLOCK
 
     generic
@@ -4213,13 +3546,13 @@ Generic list
 
     end Gen_List;
 
-    procedure Test_Int_List;
+    procedure Test_Int;
 
     with Ada.Text_IO; use Ada.Text_IO;
 
     with Gen_List;
 
-    procedure Test_Int_List is
+    procedure Test_Int is
 
        procedure Put (I : Integer) is
        begin
@@ -4266,82 +3599,21 @@ Generic list
        Display_Add_Success (Success);
 
        Int_List.Display;
-    end Test_Int_List;
-
-    procedure Test_String_List;
-
-    with Ada.Text_IO; use Ada.Text_IO;
-
-    with Gen_List;
-
-    procedure Test_String_List is
-
-       type String_Access is access String;
-
-       procedure Put (S : String_Access) is
-       begin
-          Ada.Text_IO.Put (S.all);
-       end Put;
-
-       type String_Array is array (Positive range <>) of String_Access;
-
-       A : String_Array (1 .. 3);
-       L : Natural;
-
-       package String_List is new
-         Gen_List (Item         => String_Access,
-                   Items        => String_Array,
-                   Name         => "List of strings",
-                   List_Array   => A,
-                   Last         => L);
-
-       Success : Boolean;
-
-       procedure Display_Add_Success (Success : Boolean) is
-       begin
-          if Success then
-             Put_Line ("Added item successfully!");
-          else
-             Put_Line ("Couldn't add item!");
-          end if;
-
-       end Display_Add_Success;
-
-    begin
-       String_List.Init;
-
-       String_List.Add (new String'("Hello"), Success);
-       Display_Add_Success (Success);
-
-       String_List.Add (new String'("World"), Success);
-       Display_Add_Success (Success);
-
-       String_List.Add (new String'("Bye"), Success);
-       Display_Add_Success (Success);
-
-       String_List.Add (new String'("Wait"), Success);
-       Display_Add_Success (Success);
-
-       String_List.Display;
-    end Test_String_List;
+    end Test_Int;
 
     with Ada.Command_Line; use Ada.Command_Line;
     with Ada.Text_IO;      use Ada.Text_IO;
 
-    with Test_Int_List;
-    with Test_String_List;
+    with Test_Int;
 
     procedure Main is
-       type Test_Case_Index is (Int_List_Chk,
-                                String_List_Chk);
+       type Test_Case_Index is (Int_Chk);
 
        procedure Check (TC : Test_Case_Index) is
        begin
           case TC is
-             when Int_List_Chk =>
-                Test_Int_List;
-             when String_List_Chk =>
-                Test_String_List;
+             when Int_Chk =>
+                Test_Int;
           end case;
        end Check;
 
@@ -4479,9 +3751,7 @@ Numerical Exception
 
     end Tests;
 
-    with Tests; use Tests;
-
-    procedure Check_Exception (ID : Test_ID);
+    with Tests;          use Tests;
 
     with Ada.Text_IO;    use Ada.Text_IO;
     with Ada.Exceptions; use Ada.Exceptions;
@@ -4551,14 +3821,14 @@ Re-raising Exceptions
     in 0:Exception_1_Chk
     out 0:Constraint_Error detected! Constraint_Error (raised by Check_Exception) detected!
     in 1:Exception_2_Chk
-    out 1:Custom_Exception raised! TESTS.CUSTOM_EXCEPTION (raised by Check_Exception) detected!
+    out 1:Custom_Exception raised! TESTS.ANOTHER_EXCEPTION (raised by Check_Exception) detected!
     --  END LAB IO BLOCK
 
     package Tests is
 
        type Test_ID is (Test_1, Test_2);
 
-       Custom_Exception : exception;
+       Custom_Exception, Another_Exception : exception;
 
        procedure Num_Exception_Test (ID : Test_ID);
 
@@ -4601,7 +3871,7 @@ Re-raising Exceptions
           raise;
        when E : others =>
           Put_Line (Exception_Message (E));
-          raise;
+          raise Another_Exception;
     end Check_Exception;
 
     with Ada.Command_Line; use Ada.Command_Line;
@@ -4968,8 +4238,8 @@ Generic Protected Queue
        Check (Test_Case_Index'Value (Argument (1)));
     end Main;
 
-Contracts
----------
+Design by contracts
+-------------------
 
 Price Range
 ~~~~~~~~~~~
@@ -4982,9 +4252,6 @@ Price Range
     --  END LAB IO BLOCK
 
     package Prices is
-
-       pragma Assertion_Policy (Static_Predicate  => Check,
-                                Dynamic_Predicate => Check);
 
        type Amount is delta 10.0 ** (-2) digits 12;
 
@@ -5009,15 +4276,9 @@ Price Range
        procedure Check (TC : Test_Case_Index) is
 
           procedure Check_Range (A : Amount) is
-             P : Price;
+             P : constant Price := A;
           begin
-             P := A;
              Put_Line ("Price: " & Price'Image (P));
-          exception
-             when Constraint_Error =>
-                Put_Line ("Constraint_Error detected (NOT as expected).");
-             when Assert_Failure =>
-                Put_Line ("Assert_Failure detected (as expected).");
           end Check_Range;
 
        begin
@@ -5025,6 +4286,11 @@ Price Range
           when Price_Range_Chk =>
              Check_Range (-2.0);
           end case;
+       exception
+          when Constraint_Error =>
+             Put_Line ("Constraint_Error detected (NOT as expected).");
+          when Assert_Failure =>
+             Put_Line ("Assert_Failure detected (as expected).");
        end Check;
 
     begin
@@ -5060,9 +4326,6 @@ Pythagorean Theorem: Predicate
     --  END LAB IO BLOCK
 
     package Triangles is
-
-       pragma Assertion_Policy (Static_Predicate  => Check,
-                                Dynamic_Predicate => Check);
 
        subtype Length is Integer;
 
@@ -5170,8 +4433,6 @@ Pythagorean Theorem: Precondition
 
     package Triangles is
 
-       pragma Assertion_Policy (Pre => Check);
-
        subtype Length is Integer;
 
        type Right_Triangle is record
@@ -5277,8 +4538,6 @@ Pythagorean Theorem: Postcondition
     --  END LAB IO BLOCK
 
     package Triangles is
-
-       pragma Assertion_Policy (Post => Check);
 
        subtype Length is Integer;
 
@@ -5387,8 +4646,6 @@ Pythagorean Theorem: Type Invariant
     --  END LAB IO BLOCK
 
     package Triangles is
-
-       pragma Assertion_Policy (Type_Invariant => Check);
 
        subtype Length is Integer;
 
@@ -5530,7 +4787,7 @@ Primary Colors
 
        type HTML_Color_RGB_Array is array (HTML_Color) of RGB;
 
-       To_RGB_Loopup_Table : constant HTML_Color_RGB_Array
+       To_RGB_Lookup_Table : constant HTML_Color_RGB_Array
          := (Salmon      => (16#FA#, 16#80#, 16#72#),
              Firebrick   => (16#B2#, 16#22#, 16#22#),
              Red         => (16#FF#, 16#00#, 16#00#),
@@ -5558,7 +4815,7 @@ Primary Colors
 
        function To_RGB (C : HTML_Color) return RGB is
        begin
-          return To_RGB_Loopup_Table (C);
+          return To_RGB_Lookup_Table (C);
        end To_RGB;
 
        function To_Int_Color (C : HTML_Color;
@@ -6001,387 +5258,6 @@ Simple todo list
        Check (Test_Case_Index'Value (Argument (1)));
     end Main;
 
-Inventory
-~~~~~~~~~
-
-.. code:: ada lab=Solutions.Standard_Library.Inventory
-
-    --  START LAB IO BLOCK
-    in 0:Inventory_Chk
-    out 0:==== ITEM : Ballpoint Pen == BOUGHT Quantity:  10 Value:     1.50 == SOLD Quantity:  4 Value:     0.60 == IN STOCK Quantity:  6 Value:     0.90  ==== ITEM : Oil-based Pen Marker == BOUGHT Quantity:  20 Value:     180.00 == SOLD Quantity:  0 Value:     0.00 == IN STOCK Quantity:  20 Value:     180.00  ==== ITEM : Feather Quill Pen == BOUGHT Quantity:  50 Value:     750.00 == SOLD Quantity:  20 Value:     300.00 == IN STOCK Quantity:  30 Value:     450.00  ==== OVERALL Value bought:     931.50 Value sold:       300.60 Value in stock:   630.90
-    --  END LAB IO BLOCK
-
-    with Ada.Strings.Unbounded;  use Ada.Strings.Unbounded;
-    with Ada.Containers.Vectors;
-
-    package Inventory_Pkg is
-
-       subtype Item_Quantity is Natural;
-
-       type Currency is delta 10.0 ** (-2) digits 12;
-
-       type Transaction_Type is (Bought, Sold);
-
-       type Item is private;
-
-       type Item_ID is private;
-
-       type Inventory is private;
-
-       function Init (Name  : String;
-                      Price : Currency) return Item;
-
-       procedure Init (Inv : in out Inventory);
-
-       procedure Add (Inv     : in out Inventory;
-                      I       :        Item;
-                      ID      : out    Item_ID);
-
-       function Get (Inv       : Inventory;
-                     Item_Name : String) return Item_ID;
-
-       procedure Set (Inv      : in out Inventory;
-                      Trans    :        Transaction_Type;
-                      ID       :        Item_ID;
-                      Quantity :        Positive;
-                      Success  :    out Boolean);
-
-       function Get (Inv   : Inventory;
-                     ID    : Item_ID) return String;
-       --  Retrieve item name
-       --
-       --  Item_Name : String := Get (Inv, ID);
-
-       function Get (Inv   : Inventory;
-                     ID    : Item_ID) return Item_Quantity;
-       --  Retrieve number of units in stock for specified item
-       --
-       --  Number_Units_In_Stock_For_Item : Item_Quantity := Get (Inv, ID);
-
-       function Get (Inv   : Inventory;
-                     ID    : Item_ID) return Currency;
-       --  Retrieve total amount in stock for specified item
-       --
-       --  Potential_Income_For_Units_In_Stock_For_Item : Currency := Get (Inv, ID);
-
-       function Get (Inv   : Inventory;
-                     Trans : Transaction_Type;
-                     ID    : Item_ID) return Item_Quantity;
-       --  Retrieve number of units for specified item and transaction type
-       --
-       --  Number_Units_Sold_For_Item : Item_Quantity := Get (Inv, Sold, ID);
-
-       function Get (Inv   : Inventory;
-                     Trans : Transaction_Type;
-                     ID    : Item_ID) return Currency;
-       --  Retrieve amount for specified item and transaction type
-       --
-       --  Income_For_Sold_Units_Of_Item : Currency := Get (Inv, Sold, ID);
-
-       function Get (Inv   : Inventory;
-                     Trans : Transaction_Type) return Currency;
-       --  Retrieve amount for transaction type
-       --
-       --  Income_For_All_Sold_Units : Currency := Get (Inv, Sold);
-
-       function Get (Inv   : Inventory) return Currency;
-       --  Retrieve amount for inventory
-       --
-       --  Income_For_All_Units_In_Stock : Currency := Get (Inv);
-
-       procedure Display (Inv : Inventory);
-
-    private
-
-       subtype Name_Type is Unbounded_String;
-
-       type Transaction_Quantities is array (Transaction_Type) of Item_Quantity;
-
-       type Transaction_Values is array (Transaction_Type) of Currency;
-
-       type Item is record
-          Name            : Name_Type;
-          Price           : Currency;
-          Stock_Quantity  : Item_Quantity;
-          Stock_Value     : Currency;
-          Trans_Quantity  : Transaction_Quantities;
-          Trans_Value     : Transaction_Values;
-       end record;
-
-       package Item_Containers is new Ada.Containers.Vectors
-         (Index_Type   => Positive,
-          Element_Type => Item);
-
-       subtype Items is Item_Containers.Vector;
-       subtype Item_C is Item_Containers.Cursor;
-       type Item_ID is new Item_C;
-
-       type Inventory is record
-          List_Item    : Items;
-       end record;
-
-    end Inventory_Pkg;
-
-    with Ada.Text_IO; use Ada.Text_IO;
-
-    package body Inventory_Pkg is
-
-       function Init (Name  : String;
-                      Price : Currency) return Item is
-       begin
-          return Item'(Name           => To_Unbounded_String (Name),
-                       Price          => Price,
-                       Stock_Quantity => 0,
-                       Stock_Value    => 0.0,
-                       Trans_Quantity => (others => 0),
-                       Trans_Value    => (others => 0.0));
-       end Init;
-
-       procedure Init (Inv : in out Inventory) is
-       begin
-          Inv.List_Item := Item_Containers.Empty_Vector;
-       end Init;
-
-       procedure Add (Inv     : in out Inventory;
-                      I       :        Item;
-                      ID      : out    Item_ID)
-       is
-       begin
-          Inv.List_Item.Append (I);
-          ID := Item_ID (Inv.List_Item.Last);
-       end Add;
-
-       function Get (Inv       : Inventory;
-                     Item_Name : String) return Item_ID
-       is
-          ID : Item_ID;
-       begin
-          for C in Inv.List_Item.Iterate loop
-             if To_String (Inv.List_Item (C).Name) = Item_Name then
-                ID := Item_ID (C);
-                exit;
-             end if;
-          end loop;
-
-          return ID;
-       end Get;
-
-       procedure Set (Inv      : in out Inventory;
-                      Trans    :        Transaction_Type;
-                      ID       :        Item_ID;
-                      Quantity :        Positive;
-                      Success  :    out Boolean)
-       is
-          Q : Integer;
-          C : constant Item_C := Item_C (ID);
-       begin
-          case Trans is
-             when Bought =>
-                Q := Inv.List_Item (C).Stock_Quantity + Quantity;
-             when Sold =>
-                Q := Inv.List_Item (C).Stock_Quantity - Quantity;
-          end case;
-
-          if Q >= 0 then
-             Success := True;
-
-             Inv.List_Item (C).Stock_Quantity := Q;
-
-             Inv.List_Item (C).Stock_Value :=
-               Currency (Q) * Inv.List_Item (C).Price;
-
-             Inv.List_Item (C).Trans_Quantity (Trans) :=
-               Inv.List_Item (C).Trans_Quantity (Trans) + Quantity;
-
-             Inv.List_Item (C).Trans_Value (Trans) :=
-               Inv.List_Item (C).Trans_Value (Trans) +
-               Currency (Quantity) * Inv.List_Item (C).Price;
-          else
-             Success := False;
-          end if;
-
-       end Set;
-
-       function Get (Inv   : Inventory;
-                     ID    : Item_ID) return String is
-         (To_String (Inv.List_Item (Item_C (ID)).Name));
-
-       function Get (Inv   : Inventory;
-                     ID    : Item_ID) return Item_Quantity is
-         (Inv.List_Item (Item_C (ID)).Stock_Quantity);
-
-       function Get (Inv   : Inventory;
-                     ID    : Item_ID) return Currency is
-         (Inv.List_Item (Item_C (ID)).Stock_Value);
-
-       function Get (Inv   : Inventory;
-                     Trans : Transaction_Type;
-                     ID    : Item_ID) return Item_Quantity is
-         (Inv.List_Item (Item_C (ID)).Trans_Quantity (Trans));
-
-       function Get (Inv   : Inventory;
-                     Trans : Transaction_Type;
-                     ID    : Item_ID) return Currency is
-         (Inv.List_Item (Item_C (ID)).Trans_Value (Trans));
-
-       function Get (Inv   : Inventory;
-                     Trans : Transaction_Type) return Currency
-       is
-          Total : Currency := 0.0;
-       begin
-          for C in Inv.List_Item.Iterate loop
-             Total := Total + Get (Inv, Trans, Item_ID (C));
-          end loop;
-
-          return Total;
-       end Get;
-
-       function Get (Inv   : Inventory) return Currency
-       is
-          Total : Currency := 0.0;
-       begin
-          for C in Inv.List_Item.Iterate loop
-             Total := Total + Get (Inv, Item_ID (C));
-          end loop;
-
-          return Total;
-       end Get;
-
-       procedure Display (Inv : Inventory)
-       is
-          package F_IO is new Ada.Text_IO.Decimal_IO (Currency);
-
-          use F_IO;
-       begin
-          for C in Inv.List_Item.Iterate loop
-             declare
-                I : constant Item_ID := Item_ID (C);
-             begin
-                Put_Line ("==== ITEM "
-                          & ": " & Get (Inv, I));
-                for Trans in Transaction_Type loop
-                   Put_Line ("== " & Transaction_Type'Image (Trans));
-                   Put_Line ("Quantity: "
-                             & Item_Quantity'Image (Get (Inv, Trans, I)));
-                   Put ("Value:     ");
-                   Put (Currency'(Get (Inv, Trans, I)), 1, 2, 0);
-                   New_Line;
-                end loop;
-                Put_Line ("== IN STOCK");
-                Put_Line ("Quantity: " & Item_Quantity'Image (Get (Inv, I)));
-                Put ("Value:     ");
-                Put (Currency'(Get (Inv, I)), 1, 2, 0);
-                New_Line;
-                New_Line;
-             end;
-          end loop;
-          Put_Line ("==== OVERALL");
-          Put ("Value bought:     ");
-          Put (Currency'(Get (Inv, Bought)), 1, 2, 0);
-          New_Line;
-          Put ("Value sold:       ");
-          Put (Currency'(Get (Inv, Sold)), 1, 2, 0);
-          New_Line;
-          Put ("Value in stock:   ");
-          Put (Currency'(Get (Inv)), 1, 2, 0);
-          New_Line;
-       end Display;
-
-    end Inventory_Pkg;
-
-    with Ada.Command_Line;  use Ada.Command_Line;
-    with Ada.Text_IO;       use Ada.Text_IO;
-
-    with Inventory_Pkg;     use Inventory_Pkg;
-
-    procedure Main is
-       --  Remark: the following line is not relevant.
-       F   : array (1 .. 200) of Float := (others => 42.42);
-
-       type Test_Case_Index is
-         (Inventory_Chk);
-
-       procedure Check (TC : Test_Case_Index) is
-          Inv     : Inventory;
-          Success : Boolean;
-          ID      : Item_ID;
-
-          --  Please ignore the following three lines!
-          pragma Warnings (Off, "default initialization");
-          for Inv'Address use F'Address;
-          pragma Warnings (On, "default initialization");
-
-          procedure Init_Check_Data is
-          begin
-             Add (Inv,
-                  Init ("Ballpoint Pen", 0.15),
-                  ID);
-
-             Set (Inv      => Inv,
-                  Trans    => Bought,
-                  ID       => ID,
-                  Quantity => 10,
-                  Success  => Success);
-
-             Set (Inv      => Inv,
-                  Trans    => Sold,
-                  ID       => ID,
-                  Quantity => 2,
-                  Success  => Success);
-
-             Set (Inv      => Inv,
-                  Trans    => Sold,
-                  ID       => ID,
-                  Quantity => 2,
-                  Success  => Success);
-
-             Add (Inv,
-                  Init ("Oil-based Pen Marker", 9.0),
-                  ID);
-
-             Add (Inv,
-                  Init ("Feather Quill Pen", 15.0),
-                  ID);
-
-             Set (Inv      => Inv,
-                  Trans    => Bought,
-                  ID       => Get (Inv, "Oil-based Pen Marker"),
-                  Quantity => 20,
-                  Success  => Success);
-
-             Set (Inv      => Inv,
-                  Trans    => Bought,
-                  ID       => Get (Inv, "Feather Quill Pen"),
-                  Quantity => 50,
-                  Success  => Success);
-
-             Set (Inv      => Inv,
-                  Trans    => Sold,
-                  ID       => Get (Inv, "Feather Quill Pen"),
-                  Quantity => 20,
-                  Success  => Success);
-          end Init_Check_Data;
-
-       begin
-          Init_Check_Data;
-
-          case TC is
-          when Inventory_Chk =>
-             Display (Inv);
-          end case;
-       end Check;
-
-    begin
-       if Argument_Count < 1 then
-          Put_Line ("ERROR: missing arguments! Exiting...");
-          return;
-       elsif Argument_Count > 1 then
-          Put_Line ("Ignoring additional arguments...");
-       end if;
-
-       Check (Test_Case_Index'Value (Argument (1)));
-    end Main;
-
 List of unique integers
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -6497,14 +5373,340 @@ List of unique integers
 Standard library: Dates & Times
 -------------------------------
 
+Holocene calendar
+~~~~~~~~~~~~~~~~~
+
+.. code:: ada lab=Solutions.Standard_Library_Dates_Times.Holocene_Calendar
+
+    --  START LAB IO BLOCK
+    in 0:Holocene_Chk
+    out 0:Year (Gregorian):  2012 Year (Holocene):   12012 Year (Gregorian):  2020 Year (Holocene):   12020
+    --  END LAB IO BLOCK
+
+    with Ada.Calendar; use Ada.Calendar;
+
+    function To_Holocene_Year (T : Time) return Integer is
+    begin
+       return Year (T) + 10_000;
+    end To_Holocene_Year;
+
+    with Ada.Command_Line;        use Ada.Command_Line;
+    with Ada.Text_IO;             use Ada.Text_IO;
+    with Ada.Calendar;            use Ada.Calendar;
+
+    with To_Holocene_Year;
+
+    procedure Main is
+       type Test_Case_Index is
+         (Holocene_Chk);
+
+       procedure Display_Holocene_Year (Y : Year_Number) is
+          HY : Integer;
+       begin
+          HY := To_Holocene_Year (Time_Of (Y, 1, 1));
+          Put_Line ("Year (Gregorian): " & Year_Number'Image (Y));
+          Put_Line ("Year (Holocene):  " & Integer'Image (HY));
+       end Display_Holocene_Year;
+
+       procedure Check (TC : Test_Case_Index) is
+       begin
+          case TC is
+             when Holocene_Chk =>
+                Display_Holocene_Year (2012);
+                Display_Holocene_Year (2020);
+          end case;
+       end Check;
+
+    begin
+       if Argument_Count < 1 then
+          Put_Line ("ERROR: missing arguments! Exiting...");
+          return;
+       elsif Argument_Count > 1 then
+          Put_Line ("Ignoring additional arguments...");
+       end if;
+
+       Check (Test_Case_Index'Value (Argument (1)));
+    end Main;
+
 List of events
 ~~~~~~~~~~~~~~
 
-.. code:: ada lab=Solutions.Standard_Library.List_of_Events
+.. code:: ada lab=Solutions.Standard_Library_Dates_Times.List_of_Events
 
     --  START LAB IO BLOCK
     in 0:Event_List_Chk
     out 0:EVENTS LIST - 2018-01-01     - New Year's Day - 2018-02-16     - Final check     - Release - 2018-12-03     - Brother's birthday
+    --  END LAB IO BLOCK
+
+    with Ada.Containers.Vectors;
+
+    package Events is
+
+       type Event_Item is access String;
+
+       package Event_Item_Containers is new
+         Ada.Containers.Vectors
+           (Index_Type   => Positive,
+            Element_Type => Event_Item);
+
+       subtype Event_Items is Event_Item_Containers.Vector;
+
+    end Events;
+
+    with Ada.Calendar;                use Ada.Calendar;
+    with Ada.Containers.Ordered_Maps;
+
+    package Events.Lists is
+
+       type Event_List is tagged private;
+
+       procedure Add (Events     : in out Event_List;
+                      Event_Time :        Time;
+                      Event      :        String);
+
+       procedure Display (Events : Event_List);
+
+    private
+
+       package Event_Time_Item_Containers is new
+         Ada.Containers.Ordered_Maps
+           (Key_Type         => Time,
+            Element_Type     => Event_Items,
+            "="              => Event_Item_Containers."=");
+
+       type Event_List is new Event_Time_Item_Containers.Map with null record;
+
+    end Events.Lists;
+
+    with Ada.Text_IO;             use Ada.Text_IO;
+    with Ada.Calendar.Formatting; use Ada.Calendar.Formatting;
+
+    package body Events.Lists is
+
+       procedure Add (Events     : in out Event_List;
+                      Event_Time : Time;
+                      Event      : String) is
+          use Event_Item_Containers;
+          E : constant Event_Item := new String'(Event);
+       begin
+          if not Events.Contains (Event_Time) then
+             Events.Include (Event_Time, Empty_Vector);
+          end if;
+          Events (Event_Time).Append (E);
+       end Add;
+
+       function Date_Image (T : Time) return String is
+          Date_Img : constant String := Image (T);
+       begin
+          return Date_Img (1 .. 10);
+       end;
+
+       procedure Display (Events : Event_List) is
+          use Event_Time_Item_Containers;
+          T : Time;
+       begin
+          Put_Line ("EVENTS LIST");
+          for C in Events.Iterate loop
+             T := Key (C);
+             Put_Line ("- " & Date_Image (T));
+             for I of Events (C) loop
+                Put_Line ("    - " & I.all);
+             end loop;
+          end loop;
+       end Display;
+
+    end Events.Lists;
+
+    with Ada.Command_Line;        use Ada.Command_Line;
+    with Ada.Text_IO;             use Ada.Text_IO;
+    with Ada.Calendar;
+    with Ada.Calendar.Formatting; use Ada.Calendar.Formatting;
+
+    with Events.Lists;            use Events.Lists;
+
+    procedure Main is
+       type Test_Case_Index is
+         (Event_List_Chk);
+
+       procedure Check (TC : Test_Case_Index) is
+          EL : Event_List;
+       begin
+          case TC is
+             when Event_List_Chk =>
+                EL.Add (Time_Of (2018, 2, 16),
+                        "Final check");
+                EL.Add (Time_Of (2018, 2, 16),
+                        "Release");
+                EL.Add (Time_Of (2018, 12, 3),
+                        "Brother's birthday");
+                EL.Add (Time_Of (2018, 1, 1),
+                        "New Year's Day");
+                EL.Display;
+          end case;
+       end Check;
+
+    begin
+       if Argument_Count < 1 then
+          Put_Line ("ERROR: missing arguments! Exiting...");
+          return;
+       elsif Argument_Count > 1 then
+          Put_Line ("Ignoring additional arguments...");
+       end if;
+
+       Check (Test_Case_Index'Value (Argument (1)));
+    end Main;
+
+Standard library: Strings
+-------------------------
+
+Concatenation
+~~~~~~~~~~~~~
+
+.. code:: ada lab=Solutions.Standard_Library_Strings.Concatenation
+
+    --  START LAB IO BLOCK
+    in 0:Unbounded_Concat_No_Trim_No_WS_Chk
+    out 0:Hello World!
+    in 1:Unbounded_Concat_Trim_No_WS_Chk
+    out 1:This_is_a_check
+    in 2:String_Concat_Trim_WS_Chk
+    out 2:This is a test.
+    in 3:Concat_Single_Element
+    out 3:Hi
+    --  END LAB IO BLOCK
+
+    with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
+
+    package Str_Concat is
+
+       type Unbounded_Strings is array (Positive range <>) of Unbounded_String;
+
+       function Concat (USA            : Unbounded_Strings;
+                        Trim_Str       : Boolean;
+                        Add_Whitespace : Boolean) return Unbounded_String;
+
+       function Concat (USA            : Unbounded_Strings;
+                        Trim_Str       : Boolean;
+                        Add_Whitespace : Boolean) return String;
+
+    end Str_Concat;
+
+    with Ada.Strings; use Ada.Strings;
+
+    package body Str_Concat is
+
+       function Concat (USA            : Unbounded_Strings;
+                        Trim_Str       : Boolean;
+                        Add_Whitespace : Boolean) return Unbounded_String is
+
+          function Retrieve (USA        : Unbounded_Strings;
+                             Trim_Str   : Boolean;
+                             Index      : Positive) return Unbounded_String is
+             US_Internal : Unbounded_String := USA (Index);
+          begin
+             if Trim_Str then
+                US_Internal := Trim (US_Internal, Both);
+             end if;
+             return US_Internal;
+          end Retrieve;
+
+          US : Unbounded_String := To_Unbounded_String ("");
+       begin
+          for I in USA'First .. USA'Last - 1 loop
+             US := US & Retrieve (USA, Trim_Str, I);
+             if Add_Whitespace then
+                US := US & " ";
+             end if;
+          end loop;
+          US := US & Retrieve (USA, Trim_Str, USA'Last);
+
+          return US;
+       end Concat;
+
+       function Concat (USA            : Unbounded_Strings;
+                        Trim_Str       : Boolean;
+                        Add_Whitespace : Boolean) return String is
+       begin
+          return To_String (Concat (USA, Trim_Str, Add_Whitespace));
+       end Concat;
+
+    end Str_Concat;
+
+    with Ada.Command_Line;        use Ada.Command_Line;
+    with Ada.Text_IO;             use Ada.Text_IO;
+    with Ada.Strings.Unbounded;   use Ada.Strings.Unbounded;
+
+    with Str_Concat;              use Str_Concat;
+
+    procedure Main is
+       type Test_Case_Index is
+         (Unbounded_Concat_No_Trim_No_WS_Chk,
+          Unbounded_Concat_Trim_No_WS_Chk,
+          String_Concat_Trim_WS_Chk,
+          Concat_Single_Element);
+
+       procedure Check (TC : Test_Case_Index) is
+       begin
+          case TC is
+             when Unbounded_Concat_No_Trim_No_WS_Chk =>
+                declare
+                   S : constant Unbounded_Strings := (
+                      To_Unbounded_String ("Hello"),
+                      To_Unbounded_String (" World"),
+                      To_Unbounded_String ("!"));
+                begin
+                   Put_Line (To_String (Concat (S, False, False)));
+                end;
+             when Unbounded_Concat_Trim_No_WS_Chk =>
+                declare
+                   S : constant Unbounded_Strings := (
+                      To_Unbounded_String (" This "),
+                      To_Unbounded_String (" _is_ "),
+                      To_Unbounded_String ("  a   "),
+                      To_Unbounded_String (" _check "));
+                begin
+                   Put_Line (To_String (Concat (S, True, False)));
+                end;
+             when String_Concat_Trim_WS_Chk =>
+                declare
+                   S : constant Unbounded_Strings := (
+                       To_Unbounded_String ("  This  "),
+                       To_Unbounded_String ("  is a  "),
+                       To_Unbounded_String ("  test.  "));
+                begin
+                   Put_Line (Concat (S, True, True));
+                end;
+             when Concat_Single_Element =>
+                declare
+                   S : constant Unbounded_Strings := (
+                       1 => To_Unbounded_String ("  Hi "));
+                begin
+                   Put_Line (Concat (S, True, True));
+                end;
+          end case;
+       end Check;
+
+    begin
+       if Argument_Count < 1 then
+          Put_Line ("ERROR: missing arguments! Exiting...");
+          return;
+       elsif Argument_Count > 1 then
+          Put_Line ("Ignoring additional arguments...");
+       end if;
+
+       Check (Test_Case_Index'Value (Argument (1)));
+    end Main;
+
+List of events
+~~~~~~~~~~~~~~
+
+.. code:: ada lab=Solutions.Standard_Library_Strings.List_of_Events
+
+    --  START LAB IO BLOCK
+    in 0:Unbounded_String_Chk
+    out 0:Checked
+    in 1:Event_List_Chk
+    out 1:EVENTS LIST - 2018-01-01     - New Year's Day - 2018-02-16     - Final check     - Release - 2018-12-03     - Brother's birthday
     --  END LAB IO BLOCK
 
     with Ada.Strings.Unbounded;  use Ada.Strings.Unbounded;
@@ -6591,17 +5793,26 @@ List of events
     with Ada.Text_IO;             use Ada.Text_IO;
     with Ada.Calendar;
     with Ada.Calendar.Formatting; use Ada.Calendar.Formatting;
+    with Ada.Strings.Unbounded;   use Ada.Strings.Unbounded;
 
+    with Events;
     with Events.Lists;            use Events.Lists;
 
     procedure Main is
        type Test_Case_Index is
-         (Event_List_Chk);
+         (Unbounded_String_Chk,
+          Event_List_Chk);
 
        procedure Check (TC : Test_Case_Index) is
           EL : Event_List;
        begin
           case TC is
+             when Unbounded_String_Chk =>
+                declare
+                   S : constant Events.Event_Item := To_Unbounded_String ("Checked");
+                begin
+                   Put_Line (To_String (S));
+                end;
              when Event_List_Chk =>
                 EL.Add (Time_Of (2018, 2, 16),
                         "Final check");

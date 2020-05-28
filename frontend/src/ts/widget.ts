@@ -1,6 +1,6 @@
 import $ from 'jquery';
 
-import {Area, OutputArea, LabContainer, CLIArea} from './areas';
+import {Area, OutputArea, LabContainer} from './areas';
 import {Button, CheckBox, Tabs} from './components';
 import {Editor, EditorTheme} from './editor';
 import {fetchJSON, fetchBlob, DownloadRequest, DownloadResponse} from './comms';
@@ -21,11 +21,9 @@ export class Widget {
   protected readonly container: JQuery;
   private readonly name: string;
   private tabs: Tabs = new Tabs();
-  private outputContainer: JQuery;
   protected outputArea: OutputArea = new OutputArea();
 
   private buttons: Array<Button> = [];
-  private buttonsDisabled = false;
 
   protected lab = false;
 
@@ -70,7 +68,12 @@ export class Widget {
       const ed = new Editor(file);
       this.editors.push(ed);
 
-      const tab = this.tabs.addTab(file.basename, ed.render());
+      const tab = this.tabs.addTab(file.basename, ed.render(), () => {
+        const lengths = this.editors.map((e) => e.getLength());
+        // This is a new one: ... is a spread operator
+        const max = Math.max(...lengths);
+        ed.setLength(max);
+      });
       ed.setTab(tab);
     });
 
@@ -99,17 +102,18 @@ export class Widget {
         Strings.modeDictionary[mode].tooltip,
         Strings.modeDictionary[mode].buttonText);
     btn.registerEvent('click', async (event: JQuery.ClickEvent) => {
-      if (this.buttonsDisabled) {
-        return;
+      for (const b of this.buttons) {
+        b.disable();
       }
-      this.buttonsDisabled = true;
       try {
         await this.buttonCB(event, mode);
       } catch (error) {
         this.outputArea.addError(Strings.MACHINE_BUSY_LABEL);
         console.error('Error:', error);
       } finally {
-        this.buttonsDisabled = false;
+        for (const b of this.buttons) {
+          b.enable();
+        }
       }
     });
 
@@ -159,23 +163,19 @@ export class Widget {
       lab: this.lab,
     };
 
-    return new Promise(async (resolve, reject) => {
-      try {
-        const json =
-          await
-          fetchJSON<RunProgram.TS, RunProgram.FS>(serverData,
-              this.serverAddress('run_program'));
-        if (json.identifier == '') {
-          throw new Error(json.message);
-        }
-
-        await this.getOutputFromIdentifier(json);
-      } catch (e) {
-        reject(e);
+    try {
+      const json =
+        await
+        fetchJSON<RunProgram.TS, RunProgram.FS>(serverData,
+            this.serverAddress('run_program'));
+      if (json.identifier == '') {
+        throw new Error(json.message);
       }
 
-      resolve();
-    });
+      await this.getOutputFromIdentifier(json);
+    } finally {
+      this.outputArea.showSpinner(false);
+    }
   }
 
   /**
@@ -184,52 +184,46 @@ export class Widget {
   private async downloadExample(): Promise<Array<DownloadResponse>> {
     const files: Array<Resource> = this.collectResources();
     const blobList: Array<DownloadResponse> = [];
-
-    return new Promise(async (resolve, reject) => {
-      switch (this.dlType) {
-        case DownloadType.None: {
-          reject(Error('No download available for this exercise.'));
-        }
-        case DownloadType.Server: {
-          const serverData: DownloadRequest = {
-            files: files,
-            name: this.name,
-          };
-
-          try {
-            const ret = await fetchBlob(serverData,
-                this.serverAddress('download'));
-            blobList.push(ret);
-          } catch (e) {
-            reject(e);
-          }
-
-          break;
-        }
-        case DownloadType.Client: {
-          this.editors.map((e): void => {
-            const resource: Resource = e.getResource();
-
-            blobList.push({
-              blob: new Blob([resource.contents], {type: 'text/plain'}),
-              filename: resource.basename,
-            });
-          });
-          break;
-        }
+    switch (this.dlType) {
+      case DownloadType.None: {
+        throw new Error('No download available for this exercise.');
       }
+      case DownloadType.Server: {
+        const serverData: DownloadRequest = {
+          files: files,
+          name: this.name,
+        };
 
-      resolve(blobList);
-    });
+        const ret = await fetchBlob(serverData,
+            this.serverAddress('download'));
+        blobList.push(ret);
+
+        break;
+      }
+      case DownloadType.Client: {
+        this.editors.map((e): void => {
+          const resource: Resource = e.getResource();
+
+          blobList.push({
+            blob: new Blob([resource.contents], {type: 'text/plain'}),
+            filename: resource.basename,
+          });
+        });
+        break;
+      }
+    }
+
+    return blobList;
   }
 
   /**
    * Get the run output using the return identifier from the button CB
    * @param {RunProgram.FS} json - the json data returned from button CB
    * @param {number} lRead - the number of lines already read from the stream
+   * @param {number} nReq - the number of requests sent
    */
-  private async getOutputFromIdentifier(json: RunProgram.FS, lRead = 0):
-      Promise<void> {
+  private async getOutputFromIdentifier(json: RunProgram.FS,
+      lRead = 0, nReq = 0): Promise<void> {
     const data: CheckOutput.TS = {
       identifier: json.identifier,
       read: lRead,
@@ -239,16 +233,18 @@ export class Widget {
       await fetchJSON<CheckOutput.TS, CheckOutput.FS>(data,
           this.serverAddress('check_output'));
 
+    if (nReq > 200) {
+      throw new Error('Request timed out. ' + Strings.INTERNAL_ERROR_MESSAGE);
+    } else {
+      nReq++;
+    }
+
     lRead += this.processCheckOutput(rdata);
 
     if (!rdata.completed) {
       // We have not finished processing the output: call this again
-      return new Promise((resolve) => {
-        setTimeout(async () => {
-          await this.getOutputFromIdentifier(json, lRead);
-          resolve();
-        }, 250);
-      });
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await this.getOutputFromIdentifier(json, lRead, nReq);
     }
   }
 
@@ -286,12 +282,26 @@ export class Widget {
 
         const ctMatchFound: Array<string> = outMsg.match(ctRegex);
         const rtMatchFound: Array<string> = outMsg.match(rtRegex);
-        let div: JQuery;
 
         if (ctMatchFound || rtMatchFound) {
           let basename: string;
           let row: number;
           let col: number;
+
+          // Lines that contain a sloc are clickable:
+          const cb = (): void => {
+            if (window.getSelection().toString() == '') {
+              this.editors.map((e) => {
+                if (basename == e.getResource().basename) {
+                  // Switch to the tab that contains the editor
+                  e.getTab().trigger('click');
+
+                  // Jump to the corresponding line
+                  e.gotoLine(row, col);
+                }
+              });
+            }
+          };
 
           if (ctMatchFound) {
             basename = ctMatchFound[1];
@@ -299,9 +309,9 @@ export class Widget {
             col = parseInt(ctMatchFound[3]);
 
             if (ctMatchFound[4].indexOf(' info:') == 0) {
-              div = homeArea.addInfo(outMsg);
+              homeArea.addInfo(outMsg, cb);
             } else {
-              div = homeArea.addMsg(outMsg);
+              homeArea.addMsg(outMsg, cb);
               homeArea.errorCount++;
             }
           } else {
@@ -309,22 +319,9 @@ export class Widget {
             row = parseInt(rtMatchFound[2]);
             col = 1;
 
-            div = homeArea.addMsg(outMsg);
+            homeArea.addMsg(outMsg, cb);
             homeArea.errorCount++;
           }
-
-          // Lines that contain a sloc are clickable:
-          div.on('click', () => {
-            this.editors.map((e) => {
-              if (basename == e.getResource().basename) {
-                // Switch to the tab that contains the editor
-                e.getTab().trigger('click');
-
-                // Jump to the corresponding line
-                e.gotoLine(row, col);
-              }
-            });
-          });
         } else {
           homeArea.addLine(outMsg);
         }
@@ -354,16 +351,10 @@ export class Widget {
     });
 
     if (data.completed) {
-      this.buttons.map((b) => {
-        b.disabled = false;
-      });
-
       if (data.status != 0) {
         this.outputArea.addError(Strings.EXIT_STATUS_LABEL +
             ': ' + data.status);
       }
-
-      this.outputArea.showSpinner(false);
     }
 
     return readLines;
@@ -512,7 +503,6 @@ export class Widget {
  */
 export class LabWidget extends Widget {
   private readonly labContainer: LabContainer = new LabContainer;
-  private readonly cliArea: CLIArea = new CLIArea();
 
   /**
    * Constructs the LabWidget
@@ -522,28 +512,9 @@ export class LabWidget extends Widget {
   constructor(container: JQuery, server: string) {
     super(container, server);
 
-    this.addButton('run');
     this.addButton('submit');
 
     this.lab = true;
-  }
-
-  /**
-   * Collect the resources loaded in the widget and return as list
-   *  then add cli data to file list
-   * @return {Array<Resource>} return the widget resources
-   */
-  protected collectResources(): Array<Resource> {
-    const files = super.collectResources();
-
-    if (this.cliArea.enabled()) {
-      files.push({
-        basename: Strings.CLI_FILE,
-        contents: this.cliArea.getContent(),
-      });
-    }
-
-    return files;
   }
 
   /**
@@ -605,7 +576,6 @@ export class LabWidget extends Widget {
    */
   public render(): void {
     super.render();
-    this.cliArea.render(this.buttonGroup);
     this.labContainer.render().appendTo(this.outputGroup);
   }
 }

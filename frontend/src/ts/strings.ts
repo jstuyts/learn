@@ -6,17 +6,22 @@ interface ButtonMode {
 export const modeDictionary: {[mode: string]: ButtonMode } = {
   prove: {
     buttonText: 'Prove',
-    tooltip: 'Run gnatprove to prove SPARK code',
+    tooltip: 'Prove SPARK code',
   },
   // eslint-disable-next-line @typescript-eslint/camelcase
   prove_flow: {
     buttonText: 'Examine',
-    tooltip: 'Run gnatprove to examine SPARK data and control flow',
+    tooltip: 'Examine SPARK data and control flow',
+  },
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  prove_flow_report_all: {
+    buttonText: 'Examine (report=all)',
+    tooltip: 'Examine SPARK data and control flow and report all findings',
   },
   // eslint-disable-next-line @typescript-eslint/camelcase
   prove_report_all: {
     buttonText: 'Prove (report=all)',
-    tooltip: 'Run gnatprove to prove SPARK code and report all findings',
+    tooltip: 'Prove SPARK code and report all findings',
   },
   run: {
     buttonText: 'Run',
@@ -81,9 +86,15 @@ export const FORM_FAIL =
 'An error occurred while trying to send your message. ' +
 'Please try again, or submit an issue on our GitHub.';
 
-export const FORM_MARKETING_CONSENT = 'I would like to receive from ' +
-'time to time technical and commercial information from AdaCore';
+export const FORM_MARKETING_CONSENT = 'I would like to receive, from ' +
+'time to time, technical and commercial information from AdaCore.';
 
 export const FORM_GDPR_CONSENT = 'I agree to the processing of the above ' +
-'information for the purpose of processing this feedback and with AdaCore ' +
-'privacy policy.';
+'information for the purpose of processing this feedback and with ' +
+'AdaCore\'s privacy policy.';
+
+export const FORM_PRIVACY_POLICY = 'The information above is collected by ' +
+'AdaCore for the purpose of collecting feedback. Please read our ' +
+'<a href=https://www.adacore.com/company/privacy>privacy policy</a> ' +
+'if you want to know more about how we process your information and ' +
+'your rights.';

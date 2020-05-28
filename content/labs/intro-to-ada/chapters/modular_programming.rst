@@ -3,25 +3,40 @@ Modular Programming
 
 :code-config:`reset_accumulator=True;accumulate_code=False`
 
-.. role:: ada(code)
-   :language: ada
-
-.. role:: c(code)
-   :language: c
-
-.. role:: cpp(code)
-   :language: c++
+.. include:: ../../../courses/global.txt
 
 Months
 ------
 
-In this exercise, you'll create the specification and body of the
-:ada:`Months` package. This package must contain the declaration of
-strings for each month of the year, which are stored in three-character
-constants based on the month's name. For example, the string
-:ada:`"January"` is stored in the constant :ada:`Jan`. These strings are
-then used by the :ada:`Display_Months` procedure, which is also part of
-the :ada:`Months` package.
+**Goal**: create a package to display the months of the year.
+
+**Steps**:
+
+    #. Convert the :ada:`Months` procedure below to a package.
+
+    #. Create the specification and body of the :ada:`Months` package.
+
+**Requirements**:
+
+    #. :ada:`Months` must contain the declaration of strings for each month of
+       the year, which are stored in three-character constants based on the
+       month's name.
+
+       - For example, the string :ada:`"January"` is stored in the constant
+         :ada:`Jan`. These strings are then used by the :ada:`Display_Months`
+         procedure, which is also part of the :ada:`Months` package.
+
+**Remarks**:
+
+    #. The goal of this exercise is to create the :ada:`Months` package.
+
+        #. In the code below, :ada:`Months` is declared as a procedure.
+
+            - Therefore, we need to *convert* it into a real package.
+
+        #. You have to modify the procedure declaration and implementation in
+           the code below, so that it becomes a package specification and a
+           package body.
 
 .. code:: ada lab=Modular_Programming.Months
 
@@ -93,26 +108,46 @@ the :ada:`Months` package.
 Operations
 ----------
 
-The goal of this exercise is to create two packages:
+**Goal**: create a package to perform basic mathematical operations.
 
-- Package :ada:`Operations`, which contains functions for each of the four
-  basic mathematical operations for parameters of :ada:`Integer` type:
+**Steps**:
 
-  - function :ada:`Add`: performs the addition of :ada:`A` and :ada:`B`
-    and returns the result;
+    #. Implement the :ada:`Operations` package.
 
-  - function :ada:`Subtract`: performs the subtraction of :ada:`A` and
-    :ada:`B` and returns the result;
+        #. Declare and implement the :ada:`Add` function.
 
-  - function :ada:`Multiply`: performs the multiplication of :ada:`A` and
-    :ada:`B` and returns the result;
+        #. Declare and implement the :ada:`Subtract` function.
 
-  - function :ada:`Divide`: performs the division of :ada:`A` and
-    :ada:`B` and returns the result.
+        #. Declare and implement the :ada:`Multiply`: function.
 
-- Package :ada:`Operations_Test`, which contains the
-  :ada:`Display_Operations` procedure. This procedure makes use of the
-  functions from the :ada:`Operations` package.
+        #. Declare and implement the :ada:`Divide` function.
+
+    #. Implement the :ada:`Operations.Test` package
+
+        #. Declare and implement the :ada:`Display` procedure.
+
+**Requirements**:
+
+    #. Package :ada:`Operations` contains functions for each of the four
+       basic mathematical operations for parameters of :ada:`Integer` type:
+
+        #. Function :ada:`Add` performs the addition of :ada:`A` and :ada:`B`
+           and returns the result;
+
+        #. Function :ada:`Subtract` performs the subtraction of :ada:`A` and
+           :ada:`B` and returns the result;
+
+        #. Function :ada:`Multiply` performs the multiplication of :ada:`A` and
+           :ada:`B` and returns the result;
+
+        #. Function :ada:`Divide`: performs the division of :ada:`A` and
+           :ada:`B` and returns the result.
+
+    #. Package :ada:`Operations.Test` contains the test environment:
+
+        #. Procedure :ada:`Display` must use of the functions from
+           the parent (:ada:`Operations`) package as indicated by the template
+           in the code below.
 
 .. code:: ada lab=Modular_Programming.Operations
 
@@ -123,30 +158,37 @@ The goal of this exercise is to create two packages:
     out 1:Operations:  10 +  5 =  15,  10 -  5 =  5,  10 *  5 =  50,  10 /  5 =  2, Operations:  1 +  2 =  3,  1 -  2 = -1,  1 *  2 =  2,  1 /  2 =  0,
     --  END LAB IO BLOCK
 
-    --  Create specification for Operations package, including the
-    --  declaration of the functions mentioned above.
-    --
-    procedure Operations;
+    package Operations is
 
-    --  Create body of Operations package.
-    --
-    procedure Operations is
-    begin
-       null;
+       --  Create specification for Operations package, including the
+       --  declaration of the functions mentioned above.
+       --
+
     end Operations;
 
-    --  Create specification for Operations package, including the
-    --  declaration of the Display_Operations procedure:
-    --
-    --   procedure Display_Operations (A, B : Integer);
-    --
-    procedure Operations_Test;
+    package body Operations is
 
-    --  Create body of Operations_Test package.
-    --
-    procedure Operations_Test is
+       --  Create body of Operations package.
+       --
 
-       procedure Display_Operations (A, B : Integer) is
+    end Operations;
+
+    package Operations.Test is
+
+       --  Create specification for Operations package, including the
+       --  declaration of the Display procedure:
+       --
+       --   procedure Display (A, B : Integer);
+       --
+
+    end Operations.Test;
+
+    package body Operations.Test is
+
+       --  Implement body of Operations.Test package.
+       --
+
+       procedure Display (A, B : Integer) is
           A_Str : constant String := Integer'Image (A);
           B_Str : constant String := Integer'Image (B);
        begin
@@ -156,16 +198,15 @@ The goal of this exercise is to create two packages:
                     & ",");
           --  Use the line above as a template and add the rest of the
           --  implementation for Subtract, Multiply and Divide.
-       end Display_Operations;
-    begin
-       null;
-    end Operations_Test;
+       end Display;
+
+    end Operations.Test;
 
     with Ada.Command_Line; use Ada.Command_Line;
     with Ada.Text_IO;      use Ada.Text_IO;
 
     with Operations;
-    with Operations_Test;  use Operations_Test;
+    with Operations.Test;  use Operations.Test;
 
     procedure Main is
 
@@ -186,8 +227,8 @@ The goal of this exercise is to create two packages:
                 Put_Line ("Divide (100, 2) = "
                           & Integer'Image (Operations.Divide (100, 2)));
              when Operations_Display_Chk =>
-                Display_Operations (10, 5);
-                Display_Operations ( 1, 2);
+                Display (10, 5);
+                Display ( 1, 2);
           end case;
        end Check;
 

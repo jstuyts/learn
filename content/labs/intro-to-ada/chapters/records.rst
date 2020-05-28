@@ -3,33 +3,45 @@ Records
 
 :code-config:`reset_accumulator=True;accumulate_code=False`
 
-.. role:: ada(code)
-   :language: ada
-
-.. role:: c(code)
-   :language: c
-
-.. role:: cpp(code)
-   :language: c++
+.. include:: ../../../courses/global.txt
 
 Directions
 ----------
 
-In this exercise, we make use of the algorithm implemented in the
-:ada:`Check_Direction` procedure (see chapter on
-:doc:`chapter on imperative language <courses/intro-to-ada/chapters/imperative_language>`).
-For the sake of this exercise, we use the concept of an *extended angle*,
-which includes the actual geometric angle and the corresponding direction
-(North, South, Northwest, and so on). These are your goals:
+**Goal**: create a package that handles directions and geometric angles.
 
-#. Create a record :ada:`Ext_Angle` to store information about the
-   extended angle.
+**Steps**:
 
-#. Implement a procedure :ada:`Display` to display information about the
-   extended angle.
+    #. Implement the :ada:`Directions` package.
 
-#. Implement the function :ada:`To_Ext_Angle` to convert a simple angle
-   value to an extended angle.
+        #. Declare the :ada:`Ext_Angle` record.
+
+        #. Implement the :ada:`Display` procedure.
+
+        #. Implement the :ada:`To_Ext_Angle` function.
+
+**Requirements**:
+
+    #. Record :ada:`Ext_Angle` stores information about the extended angle
+       (see remark about *extended angles* below).
+
+    #. Procedure :ada:`Display` displays information about the extended angle.
+
+        #. You should use the implementation that has been commented out (see
+           code below) as a starting point.
+
+    #. Function :ada:`To_Ext_Angle` converts a simple angle value to an
+       extended angle (:ada:`Ext_Angle` type)
+
+**Remarks**:
+
+    #. We make use of the algorithm implemented in the :ada:`Check_Direction`
+       procedure (see chapter on
+       :doc:`chapter on imperative language <courses/intro-to-ada/chapters/imperative_language>`).
+
+    #. For the sake of this exercise, we use the concept of *extended angles*.
+       This includes the actual geometric angle and the corresponding direction
+       (North, South, Northwest, and so on).
 
 .. code:: ada lab=Records.Directions
 
@@ -146,54 +158,78 @@ which includes the actual geometric angle and the corresponding direction
 Colors
 ------
 
-In this exercise, we use the exercise on HTML colors from the previous lab
-on :doc:`./strongly_typed_language` as a starting point.
+**Goal**: create a package to represent HTML colors in RGB format using the
+hexadecimal form.
 
-Just to recapitulate, these are the HTML colors that we use:
+**Steps**:
 
-   +-------------+---------------+
-   | Color       | Value         |
-   +=============+===============+
-   | Salmon      | ``#FA8072``   |
-   +-------------+---------------+
-   | Firebrick   | ``#B22222``   |
-   +-------------+---------------+
-   | Red         | ``#FF0000``   |
-   +-------------+---------------+
-   | Darkred     | ``#8B0000``   |
-   +-------------+---------------+
-   | Lime        | ``#00FF00``   |
-   +-------------+---------------+
-   | Forestgreen | ``#228B22``   |
-   +-------------+---------------+
-   | Green       | ``#008000``   |
-   +-------------+---------------+
-   | Darkgreen   | ``#006400``   |
-   +-------------+---------------+
-   | Blue        | ``#0000FF``   |
-   +-------------+---------------+
-   | Mediumblue  | ``#0000CD``   |
-   +-------------+---------------+
-   | Darkblue    | ``#00008B``   |
-   +-------------+---------------+
+    #. Implement the :ada:`Color_Types` package.
 
-The hexadecimal information of each color on this table can be mapped
-to three color elements: red, green and blue. Each color element has a
-value between 0 and 255, or ``00`` and ``FF`` in hexadecimal. For the
-color *salmon*, the value of the color elements are: red = ``FA``, green =
-``80`` and blue = ``72`` (in hexadecimal).
+        #. Declare the :ada:`RGB` record.
 
-Your goal with this exercise is to create a record :ada:`RGB` that stores
-information about HTML colors in RGB format, so that we can retrieve
-the individual color elements. In addition, you will:
+        #. Implement the :ada:`To_RGB` function.
 
-#. Implement a function :ada:`To_RGB` to convert from the
-   :ada:`HTML_Color` type to the :ada:`RGB` type based on the information
-   from the table above.
+        #. Implement the :ada:`Image` function for the :ada:`RGB` type.
 
-#. Implement a function :ada:`Image` that returns a string representation
-   of the :ada:`RGB` type in this format:
-   :ada:`"(Red => 16#..#, Green => 16#...#, Blue => 16#...# )"`
+**Requirements**:
+
+    #. The following table contains the HTML colors and the corresponding value
+       in hexadecimal form for each color element:
+
+        +-------------+---------+---------+---------+
+        | Color       | Red     | Green   | Blue    |
+        +=============+=========+=========+=========+
+        | Salmon      | ``#FA`` | ``#80`` | ``#72`` |
+        +-------------+---------+---------+---------+
+        | Firebrick   | ``#B2`` | ``#22`` | ``#22`` |
+        +-------------+---------+---------+---------+
+        | Red         | ``#FF`` | ``#00`` | ``#00`` |
+        +-------------+---------+---------+---------+
+        | Darkred     | ``#8B`` | ``#00`` | ``#00`` |
+        +-------------+---------+---------+---------+
+        | Lime        | ``#00`` | ``#FF`` | ``#00`` |
+        +-------------+---------+---------+---------+
+        | Forestgreen | ``#22`` | ``#8B`` | ``#22`` |
+        +-------------+---------+---------+---------+
+        | Green       | ``#00`` | ``#80`` | ``#00`` |
+        +-------------+---------+---------+---------+
+        | Darkgreen   | ``#00`` | ``#64`` | ``#00`` |
+        +-------------+---------+---------+---------+
+        | Blue        | ``#00`` | ``#00`` | ``#FF`` |
+        +-------------+---------+---------+---------+
+        | Mediumblue  | ``#00`` | ``#00`` | ``#CD`` |
+        +-------------+---------+---------+---------+
+        | Darkblue    | ``#00`` | ``#00`` | ``#8B`` |
+        +-------------+---------+---------+---------+
+
+    #. The hexadecimal information of each HTML color can be mapped to three
+       color elements: red, green and blue.
+
+        #. Each color element has a value between 0 and 255, or ``00`` and
+           ``FF`` in hexadecimal.
+
+        #. For example, for the color *salmon*, the hexadecimal value of the
+           color elements are:
+
+            - red = ``FA``,
+            - green = ``80``, and
+            - blue = ``72``.
+
+    #. Record :ada:`RGB` stores information about HTML colors in RGB format, so
+       that we can retrieve the individual color elements.
+
+    #. Function :ada:`To_RGB` converts from the :ada:`HTML_Color` enumeration
+       to the :ada:`RGB` type based on the information from the table above.
+
+    #. Function :ada:`Image` returns a string representation of the :ada:`RGB`
+       type in this format:
+
+        - :ada:`"(Red => 16#..#, Green => 16#...#, Blue => 16#...# )"`
+
+**Remarks**:
+
+    #. We use the exercise on HTML colors from the previous lab on
+       :doc:`./strongly_typed_language` as a starting point.
 
 .. code:: ada lab=Records.Colors
 
@@ -217,6 +253,15 @@ the individual color elements. In addition, you will:
           Mediumblue,
           Darkblue);
 
+       function To_Integer (C : HTML_Color) return Integer;
+
+       type Basic_HTML_Color is
+         (Red,
+          Green,
+          Blue);
+
+       function To_HTML_Color (C : Basic_HTML_Color) return HTML_Color;
+
        subtype Int_Color is Integer range 0 .. 255;
 
        --  Replace type declaration for RGB record below
@@ -236,6 +281,33 @@ the individual color elements. In addition, you will:
     with Ada.Integer_Text_IO;
 
     package body Color_Types is
+
+       function To_Integer (C : HTML_Color) return Integer is
+       begin
+          case C is
+             when Salmon      => return 16#FA8072#;
+             when Firebrick   => return 16#B22222#;
+             when Red         => return 16#FF0000#;
+             when Darkred     => return 16#8B0000#;
+             when Lime        => return 16#00FF00#;
+             when Forestgreen => return 16#228B22#;
+             when Green       => return 16#008000#;
+             when Darkgreen   => return 16#006400#;
+             when Blue        => return 16#0000FF#;
+             when Mediumblue  => return 16#0000CD#;
+             when Darkblue    => return 16#00008B#;
+          end case;
+
+       end To_Integer;
+
+       function To_HTML_Color (C : Basic_HTML_Color) return HTML_Color is
+       begin
+          case C is
+             when Red   => return Red;
+             when Green => return Green;
+             when Blue  => return Blue;
+          end case;
+       end To_HTML_Color;
 
        function To_RGB (C : HTML_Color) return RGB is
        begin
@@ -305,59 +377,70 @@ the individual color elements. In addition, you will:
 Inventory
 ---------
 
-In this exercise, you'll create a simplified inventory system for your
-store. The system will be used to enter items and keep track of your
-assets. These are your goals:
+**Goal**: create a simplified inventory system for a store to enter items and
+keep track of assets.
 
-#. Create a record :ada:`Item` to collect information about products from
-   your store. To keep it simple, this record only contains the quantity
-   and price of each item. The record elements must be named :ada:`Quantity` and
-   :ada:`Price`.
+**Steps**:
 
-#. Create a record :ada:`Inventory` to collect information about your
-   inventory. In this case, we're only interested in the assets.
+    #. Implement the :ada:`Inventory_Pkg` package.
 
-#. Implement an :ada:`Init` function for the :ada:`Item` type to return an
-   initialized item. This function should also display the item name.
+        #. Declare the :ada:`Item` record.
 
-#. Implement a procedure :ada:`Add` to add an item to your inventory.
-   Since you're keeping track of the assets, you should accumulate the
-   total amount of each item in this element.
+        #. Implement the :ada:`Init` function.
 
-   - Hint: the code below doesn't have an :ada:`Init` subprogram for the
-     :ada:`Inventory` type. In order for your system to have correct
-     information about your assets, you should declare a default value.
-     Alternatively, you can implement an :ada:`Init` subprogram and make
-     sure it is called in the :ada:`Check` procedure below.
+        #. Implement the :ada:`Add` procedure.
 
-#. Implement a procedure :ada:`Display` to display information about the
-   inventory.
+**Requirements**:
+
+    #. Record :ada:`Item` collects information about products from the store.
+
+        #. To keep it simple, this record only contains the name, quantity and
+           price of each item.
+
+        #. The record components are:
+
+            - :ada:`Name` of :ada:`Item_Name` type;
+
+            - :ada:`Quantity` of :ada:`Natural` type;
+
+            - :ada:`Price` of :ada:`Float` type.
+
+    #. Function :ada:`Init` returns an initialized item (of :ada:`Item` type).
+
+        #. Function :ada:`Init` must also display the item name by calling the
+           :ada:`To_String` function for the :ada:`Item_Name` type.
+
+            - This is already implemented in the code below.
+
+    #. Procedure :ada:`Add` adds an item to the assets.
+
+        #. Since we want to keep track of the assets, the implementation must
+           accumulate the total amount of each item.
 
 .. code:: ada lab=Records.Inventory
 
     --  START LAB IO BLOCK
     in 0:Inventory_Chk
-    out 0:Adding item: Ballpoint Pen. Assets: $27.75. Adding item: Oil-based Pen Marker. Assets: $927.75. Adding item: Feather Quill Pen. Assets: $1007.75.
+    out 0:Item: Ballpoint Pen. Assets: $27.75. Item: Oil-based Pen Marker. Assets: $927.75. Item: Feather Quill Pen. Assets: $1007.75.
     --  END LAB IO BLOCK
 
     package Inventory_Pkg is
+
+       type Item_Name is
+         (Ballpoint_Pen, Oil_Based_Pen_Marker, Feather_Quill_Pen);
+
+       function To_String (I : Item_Name) return String;
 
        --  Replace type declaration for Item record:
        --
        type Item is null record;
 
-       --  Replace type declaration for Inventory record:
-       --
-       type Inventory is null record;
-
-       function Init (Name     : String;
+       function Init (Name     : Item_Name;
                       Quantity : Natural;
                       Price    : Float) return Item;
 
-       procedure Add (Inv : in out Inventory;
-                      I   : Item);
-
-       procedure Display (Inv : Inventory);
+       procedure Add (Assets : in out Float;
+                      I      : Item);
 
     end Inventory_Pkg;
 
@@ -365,38 +448,33 @@ assets. These are your goals:
 
     package body Inventory_Pkg is
 
-       function Init (Name     : String;
+       function To_String (I : Item_Name) return String is
+       begin
+          case I is
+             when Ballpoint_Pen        => return "Ballpoint Pen";
+             when Oil_Based_Pen_Marker => return "Oil-based Pen Marker";
+             when Feather_Quill_Pen    => return "Feather Quill Pen";
+          end case;
+       end To_String;
+
+       function Init (Name     : Item_Name;
                       Quantity : Natural;
                       Price    : Float) return Item is
        begin
-          Put_Line ("Adding item: " & Name & ".");
+          Put_Line ("Item: " & To_String (Name) & ".");
 
           --  Replace return statement with the actual record initialization!
           --
           return (null record);
        end Init;
 
-       procedure Add (Inv : in out Inventory;
-                      I   : Item) is
+       procedure Add (Assets : in out Float;
+                      I      : Item) is
        begin
           --  Implement the function that adds an item to the inventory here!
           --
           null;
        end Add;
-
-       procedure Display (Inv : Inventory) is
-          package F_IO is new Ada.Text_IO.Float_IO (Float);
-
-          use F_IO;
-       begin
-          --  Uncomment the code below and fill the missing elements
-          --
-          --  Put ("Assets: $");
-          --  Put (____, 1, 2, 0);
-          --  Put (".");
-          --  New_Line;
-          null;
-       end Display;
 
     end Inventory_Pkg;
 
@@ -412,28 +490,39 @@ assets. These are your goals:
        type Test_Case_Index is
          (Inventory_Chk);
 
+       procedure Display (Assets : Float) is
+          package F_IO is new Ada.Text_IO.Float_IO (Float);
+
+          use F_IO;
+       begin
+          Put ("Assets: $");
+          Put (Assets, 1, 2, 0);
+          Put (".");
+          New_Line;
+       end Display;
+
        procedure Check (TC : Test_Case_Index) is
-          I   : Item;
-          Inv : Inventory;
+          I      : Item;
+          Assets : Float := 0.0;
 
           --  Please ignore the following three lines!
           pragma Warnings (Off, "default initialization");
-          for Inv'Address use F'Address;
+          for Assets'Address use F'Address;
           pragma Warnings (On, "default initialization");
        begin
           case TC is
           when Inventory_Chk =>
-             I := Init ("Ballpoint Pen",        185,  0.15);
-             Add (Inv, I);
-             Display (Inv);
+             I := Init (Ballpoint_Pen,        185,  0.15);
+             Add (Assets, I);
+             Display (Assets);
 
-             I := Init ("Oil-based Pen Marker", 100,  9.0);
-             Add (Inv, I);
-             Display (Inv);
+             I := Init (Oil_Based_Pen_Marker, 100,  9.0);
+             Add (Assets, I);
+             Display (Assets);
 
-             I := Init ("Feather Quill Pen",      2, 40.0);
-             Add (Inv, I);
-             Display (Inv);
+             I := Init (Feather_Quill_Pen,      2, 40.0);
+             Add (Assets, I);
+             Display (Assets);
           end case;
        end Check;
 
