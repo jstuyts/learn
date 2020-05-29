@@ -98,3 +98,9 @@ export const FORM_PRIVACY_POLICY = 'The information above is collected by ' +
 '<a href=https://www.adacore.com/company/privacy>privacy policy</a> ' +
 'if you want to know more about how we process your information and ' +
 'your rights.';
+
+export const FORM_NAME_ERROR_TEXT = 'Name field cannot be empty.';
+
+export const FORM_EMAIL_ERROR_TEXT = 'Email address is invalid.';
+
+export const FORM_MESSAGE_ERROR_TEXT = 'Message field cannot be empty.';

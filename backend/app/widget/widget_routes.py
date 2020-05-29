@@ -67,16 +67,21 @@ def contact_form():
     data = request.get_json()
     app.logger.debug(data)
 
-    time.sleep(5)
+    if not data['GDPRConsent']:
+        success = False
+        app.logger.error('Form submission with GDPR consent = false.')
+    else:
+        time.sleep(5)
+        # mail = Mail(app)
+        # msg = Message(subject=f"LEARN: Message from {data['Name']}",
+        #               body=json.dumps(data, indent=4),
+        #               sender=data["Email"],
+        #               reply_to=data["Email"],
+        #               recipients=["test@test.com"])
+        # mail.send(msg)
+        success = True
 
-    # mail = Mail(app)
-    # msg = Message(subject=f"LEARN: Message from {data['Name']}",
-    #               body=f"Name: {data['Name']}\nEmail: {data['Email']}\nMessage: {data['Message']}\n",
-    #               sender=data["Email"],
-    #               reply_to=data["Email"],
-    #               recipients=["test@test.com"])
-    # mail.send(msg)
-    return compose_response({'success': True}, 200)
+    return compose_response({'success': success}, 200)
 
 
 @widget_bp.route('/run_program/', methods=['POST'])

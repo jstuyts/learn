@@ -17,6 +17,7 @@ interface SubmitResponse {
 /** Abstract base class for Form fields */
 abstract class Field {
   protected input: JQuery;
+  protected label: JQuery;
   public name: string;
 
   /**
@@ -34,7 +35,7 @@ abstract class Field {
       tag = 'input') {
     this.name = name;
 
-    $('<label>')
+    this.label = $('<label>')
         .attr('for', id)
         .text(name)
         .appendTo(container);
@@ -47,9 +48,17 @@ abstract class Field {
   }
   /**
    * The abstract validation function
+   * @abstract
    * @return boolean
    */
   abstract validate(): boolean;
+
+  /**
+   * Return the error text to display to the user for this field
+   * @abstract
+   * @returns {string}
+   */
+  abstract getErrorText(): string;
 
   /**
    * Returns the value in the field as a string
@@ -71,6 +80,19 @@ abstract class Field {
    */
   public addError(): void {
     this.input.addClass('form-error');
+    this.label.after(
+        $('<span>')
+            .addClass('form-error')
+            .text(this.getErrorText())
+    );
+  }
+
+  /**
+   * Adds the required class to the field
+   */
+  public addRequired(): void {
+    this.label.addClass('required');
+    this.input.addClass('required');
   }
 }
 
@@ -94,6 +116,14 @@ class TextField extends Field {
    */
   public validate(): boolean {
     return ((this.input.val() as string).length > 0);
+  }
+
+  /**
+   * Return the error text for this field
+   * @return {string}
+   */
+  public getErrorText(): string {
+    return Strings.FORM_NAME_ERROR_TEXT;
   }
 }
 
@@ -119,6 +149,14 @@ class EmailField extends Field {
     const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
     return emailRegex.test((this.input.val() as string));
   }
+
+  /**
+   * Return the error text for this field
+   * @return {string}
+   */
+  public getErrorText(): string {
+    return Strings.FORM_EMAIL_ERROR_TEXT;
+  }
 }
 
 /**
@@ -143,6 +181,14 @@ class TextArea extends Field {
   public validate(): boolean {
     return ((this.input.val() as string).length > 0);
   }
+
+  /**
+   * Return the error text for this field
+   * @return {string}
+   */
+  public getErrorText(): string {
+    return Strings.FORM_MESSAGE_ERROR_TEXT;
+  }
 }
 
 /** The Contact Form class */
@@ -155,12 +201,18 @@ export class ContactForm {
   private gdprConsent: CheckBox;
   private submitButton: Button;
 
-  private failDOM: JQuery= $('<span>')
+  private failDOM: JQuery= $('<div>')
       .addClass('form-fail')
-      .text(Strings.FORM_FAIL);
-  private successDOM: JQuery = $('<span>')
+      .append(
+          $('<p>').text(Strings.FORM_FAIL)
+      );
+
+  private successDOM: JQuery = $('<div>')
       .addClass('form-success')
-      .text(Strings.FORM_SUCCESS);
+      .append(
+          $('<p>').text(Strings.FORM_SUCCESS)
+      );
+
 
   private fieldList: Array<Field> = [];
 
@@ -183,15 +235,22 @@ export class ContactForm {
       );
     }
 
-    // Fill form with fields
-    this.fieldList = [
-      new TextField(this.form, 'Name', 'name-field'),
-      new EmailField(this.form, 'email-field'),
-      new TextArea(this.form, 'Message', 'message-field'),
-    ];
+    const nameField = new TextField(this.form, 'Name', 'name-field');
+    nameField.addRequired();
+    this.fieldList.push(nameField);
 
-    $('<span>')
-        .html(Strings.FORM_PRIVACY_POLICY)
+    const emailField = new EmailField(this.form, 'email-field');
+    emailField.addRequired();
+    this.fieldList.push(emailField);
+
+    const messageField = new TextArea(this.form, 'Message', 'message-field');
+    messageField.addRequired();
+    this.fieldList.push(messageField);
+
+    $('<div>')
+        .append(
+            $('<p>').html(Strings.FORM_PRIVACY_POLICY)
+        )
         .appendTo(this.form);
 
     this.submitButton = new Button(['form-submit'], 'Submit', 'Submit');
@@ -239,6 +298,7 @@ export class ContactForm {
           formData['GDPRConsent'] = this.gdprConsent.checked();
           this.form.fadeOut(200, () => {
             this.loader.appendTo(this.container);
+            this.loader.show();
           });
 
           try {

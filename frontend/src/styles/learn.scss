@@ -287,6 +287,23 @@ div {
         label {
             margin-top: 15px;
             margin-bottom: 0px;
+
+            &.required::after {
+                margin-left: 5px;
+                color: $color-theme-bg-dark;
+                content: "(required)";
+            }
+        }
+
+        p {
+            margin-bottom: 10px;
+        }
+
+        span {
+            &.form-error {
+                color: red;
+                font-size: 85%;
+            }
         }
 
         input {
@@ -318,13 +335,15 @@ div {
             outline: 0;
             border-bottom: 1px solid $color-theme-bg-dark;
             box-sizing: border-box;
-                font-size: 16px;
-                font-weight: bold;
-                height: 130px;
-                margin-top: 10px;
-                padding: 10px 20px 0;
-                resize: none;
-                width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            height: 130px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            padding: 10px 20px 0;
+            resize: none;
+            width: 100%;
+
             &:focus {
               border: 1px solid $color-theme-bg-dark;
             }
@@ -333,15 +352,13 @@ div {
                 color:red;
             }
         }
-        span {
-            margin-top: 20px;
-            margin-bottom: 5px;
-
+        div {
             &.form-success {
 
             }
             &.form-fail {
                 color: red;
+                margin-top: 15px;
             }
         }
         button {
@@ -359,13 +376,28 @@ div {
             grid-template-columns: max-content 100%;
             grid-gap:5px;
 
+            input {
+
+                align-self: center;
+            }
+
             label {
 
             }
 
-            input {
-                margin-top: 15px;
-                margin-bottom: 3px;
+            &.required {
+                label::after {
+                    margin-left: 5px;
+                    color: $color-theme-bg-dark;
+                    content: "(required)";
+                }
+            }
+
+            &.optional {
+                label::after {
+                    margin-left: 5px;
+                    content: "(optional)";
+                }
             }
         }
     }
