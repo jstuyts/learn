@@ -294,7 +294,7 @@ export class Widget {
           // Lines that contain a sloc are clickable:
           const cb = (): void => {
             if (window.getSelection().toString() == '') {
-              if (!util.isUndefined (ed)) {
+              if (ed) {
                 ed.getTab().trigger('click');
 
                 // Jump to the corresponding line
@@ -310,11 +310,11 @@ export class Widget {
 
             if (ctMatchFound[4].indexOf(' info:') == 0) {
               homeArea.addInfo(outMsg, cb);
-              annotationType = "information";
+              annotationType = 'information';
             } else {
               homeArea.addMsg(outMsg, cb);
               homeArea.errorCount++;
-              annotationType = "error";
+              annotationType = 'error';
             }
           } else {
             basename = rtMatchFound[1];
@@ -323,7 +323,7 @@ export class Widget {
 
             homeArea.addMsg(outMsg, cb);
             homeArea.errorCount++;
-            annotationType = "error";
+            annotationType ='error';
           }
 
           this.editors.map((e) => {
@@ -332,8 +332,8 @@ export class Widget {
             }
           });
 
-          if (!util.isUndefined (ed)) {
-            ed.setGutterAnnotation (row, col, outMsg, annotationType);
+          if (ed) {
+            ed.setGutterAnnotation(row, col, outMsg, annotationType);
           }
         } else {
           homeArea.addLine(outMsg);

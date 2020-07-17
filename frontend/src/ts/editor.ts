@@ -155,13 +155,21 @@ export class Editor {
     this.editor.gotoLine(line, col - 1, true);
     this.editor.focus();
   }
-
-  public setGutterAnnotation(line: number, col: number, msg: string, type: string): void {
+  /**
+   * Add gutter annotations to the ace editor session
+   *
+   * @param {number} line - The line number
+   * @param {number} col - The column number
+   * @param {string} msg - The corresponding message
+   * @param {string} type - The type of annotation
+   */
+  public setGutterAnnotation(line: number, col: number, msg: string,
+      type: string): void {
     this.editor.getSession().setAnnotations([{
-      row: line,
+      row: line - 1,
       column: col,
       text: msg,
-      type: type
+      type: type,
     }]);
   }
 }
