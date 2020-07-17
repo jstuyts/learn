@@ -111,6 +111,7 @@ export class Editor {
   public reset(): void {
     this.editor.setValue(this.initialContents);
     this.editor.gotoLine(1);
+    this.editor.getSession().clearAnnotations();
   }
 
   /**
@@ -146,12 +147,21 @@ export class Editor {
   }
 
   /**
-   * Jumo the editor to row:col
+   * Jump the editor to row:col
    * @param {number} line - The line number to goto
    * @param {number} col - The col + 1 to goto
    */
   public gotoLine(line: number, col: number): void {
     this.editor.gotoLine(line, col - 1, true);
     this.editor.focus();
+  }
+
+  public setGutterAnnotation(line: number, col: number, msg: string, type: string): void {
+    this.editor.getSession().setAnnotations([{
+      row: line,
+      column: col,
+      text: msg,
+      type: type
+    }]);
   }
 }

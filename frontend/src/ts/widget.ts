@@ -288,19 +288,18 @@ export class Widget {
           let basename: string;
           let row: number;
           let col: number;
+          let ed: Editor;
+          let annotationType: string;
 
           // Lines that contain a sloc are clickable:
           const cb = (): void => {
             if (window.getSelection().toString() == '') {
-              this.editors.map((e) => {
-                if (basename == e.getResource().basename) {
-                  // Switch to the tab that contains the editor
-                  e.getTab().trigger('click');
+              if (!util.isUndefined (ed)) {
+                ed.getTab().trigger('click');
 
-                  // Jump to the corresponding line
-                  e.gotoLine(row, col);
-                }
-              });
+                // Jump to the corresponding line
+                ed.gotoLine(row, col);
+              }
             }
           };
 
@@ -311,9 +310,11 @@ export class Widget {
 
             if (ctMatchFound[4].indexOf(' info:') == 0) {
               homeArea.addInfo(outMsg, cb);
+              annotationType = "information";
             } else {
               homeArea.addMsg(outMsg, cb);
               homeArea.errorCount++;
+              annotationType = "error";
             }
           } else {
             basename = rtMatchFound[1];
@@ -322,6 +323,17 @@ export class Widget {
 
             homeArea.addMsg(outMsg, cb);
             homeArea.errorCount++;
+            annotationType = "error";
+          }
+
+          this.editors.map((e) => {
+            if (basename == e.getResource().basename) {
+              ed = e;
+            }
+          });
+
+          if (!util.isUndefined (ed)) {
+            ed.setGutterAnnotation (row, col, outMsg, annotationType);
           }
         } else {
           homeArea.addLine(outMsg);
